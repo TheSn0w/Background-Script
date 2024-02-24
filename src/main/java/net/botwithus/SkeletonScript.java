@@ -42,13 +42,188 @@ public class SkeletonScript extends LoopingScript {
     boolean useHunter;
     boolean quickprayer;
     boolean eatFood;
+    private int startingAttackLevel;
+    private int startingStrengthLevel;
+    private int startingDefenseLevel;
+    private int startingRangedLevel;
+    private int startingPrayerLevel;
+    private int startingMagicLevel;
+    private int startingRunecraftingLevel;
+    private int startingConstructionLevel;
+    private int startingDungeoneeringLevel;
+    private int startingArchaeologyLevel;
+    private int startingConstitutionLevel;
+    private int startingAgilityLevel;
+    private int startingHerbloreLevel;
+    private int startingThievingLevel;
+    private int startingCraftingLevel;
+    private int startingFletchingLevel;
+    private int startingSlayerLevel;
+    private int startingHunterLevel;
+    private int startingDivinationLevel;
+    private int startingNecromancyLevel;
+    private int startingMiningLevel;
+    private int startingSmithingLevel;
+    private int startingFishingLevel;
+    private int startingCookingLevel;
+    private int startingFiremakingLevel;
+    private int startingWoodcuttingLevel;
+    private int startingFarmingLevel;
+    private int startingSummoningLevel;
+    private int startingInventionLevel;
+    public int getStartingAttackLevel() {
+        return startingAttackLevel;
+    }
+
+    public int getStartingStrengthLevel() {
+        return startingStrengthLevel;
+    }
+
+    public int getStartingDefenseLevel() {
+        return startingDefenseLevel;
+    }
+
+    public int getStartingRangedLevel() {
+        return startingRangedLevel;
+    }
+
+    public int getStartingPrayerLevel() {
+        return startingPrayerLevel;
+    }
+
+    public int getStartingMagicLevel() {
+        return startingMagicLevel;
+    }
+
+    public int getStartingRunecraftingLevel() {
+        return startingRunecraftingLevel;
+    }
+
+    public int getStartingConstructionLevel() {
+        return startingConstructionLevel;
+    }
+
+    public int getStartingDungeoneeringLevel() {
+        return startingDungeoneeringLevel;
+    }
+
+    public int getStartingArchaeologyLevel() {
+        return startingArchaeologyLevel;
+    }
+
+    public int getStartingConstitutionLevel() {
+        return startingConstitutionLevel;
+    }
+
+    public int getStartingAgilityLevel() {
+        return startingAgilityLevel;
+    }
+
+    public int getStartingHerbloreLevel() {
+        return startingHerbloreLevel;
+    }
+
+    public int getStartingThievingLevel() {
+        return startingThievingLevel;
+    }
+
+    public int getStartingCraftingLevel() {
+        return startingCraftingLevel;
+    }
+
+    public int getStartingFletchingLevel() {
+        return startingFletchingLevel;
+    }
+
+    public int getStartingSlayerLevel() {
+        return startingSlayerLevel;
+    }
+
+    public int getStartingHunterLevel() {
+        return startingHunterLevel;
+    }
+
+    public int getStartingDivinationLevel() {
+        return startingDivinationLevel;
+    }
+
+    public int getStartingNecromancyLevel() {
+        return startingNecromancyLevel;
+    }
+
+    public int getStartingMiningLevel() {
+        return startingMiningLevel;
+    }
+
+    public int getStartingSmithingLevel() {
+        return startingSmithingLevel;
+    }
+
+    public int getStartingFishingLevel() {
+        return startingFishingLevel;
+    }
+
+    public int getStartingCookingLevel() {
+        return startingCookingLevel;
+    }
+
+    public int getStartingFiremakingLevel() {
+        return startingFiremakingLevel;
+    }
+
+    public int getStartingWoodcuttingLevel() {
+        return startingWoodcuttingLevel;
+    }
+
+    public int getStartingFarmingLevel() {
+        return startingFarmingLevel;
+    }
+
+    public int getStartingSummoningLevel() {
+        return startingSummoningLevel;
+    }
+
+    public int getStartingInventionLevel() {
+        return startingInventionLevel;
+    }
 
 
     @Override
     public boolean initialize() {
+        startingAttackLevel = Skills.ATTACK.getSkill().getLevel();
+        startingStrengthLevel = Skills.STRENGTH.getSkill().getLevel();
+        startingDefenseLevel = Skills.DEFENSE.getSkill().getLevel();
+        startingRangedLevel = Skills.RANGED.getSkill().getLevel();
+        startingPrayerLevel = Skills.PRAYER.getSkill().getLevel();
+        startingMagicLevel = Skills.MAGIC.getSkill().getLevel();
+        startingRunecraftingLevel = Skills.RUNECRAFTING.getSkill().getLevel();
+        startingConstructionLevel = Skills.CONSTRUCTION.getSkill().getLevel();
+        startingDungeoneeringLevel = Skills.DUNGEONEERING.getSkill().getLevel();
+        startingArchaeologyLevel = Skills.ARCHAEOLOGY.getSkill().getLevel();
+        startingConstitutionLevel = Skills.CONSTITUTION.getSkill().getLevel();
+        startingAgilityLevel = Skills.AGILITY.getSkill().getLevel();
+        startingHerbloreLevel = Skills.HERBLORE.getSkill().getLevel();
+        startingThievingLevel = Skills.THIEVING.getSkill().getLevel();
+        startingCraftingLevel = Skills.CRAFTING.getSkill().getLevel();
+        startingFletchingLevel = Skills.FLETCHING.getSkill().getLevel();
+        startingSlayerLevel = Skills.SLAYER.getSkill().getLevel();
+        startingHunterLevel = Skills.HUNTER.getSkill().getLevel();
+        startingDivinationLevel = Skills.DIVINATION.getSkill().getLevel();
+        startingNecromancyLevel = Skills.NECROMANCY.getSkill().getLevel();
+        startingMiningLevel = Skills.MINING.getSkill().getLevel();
+        startingSmithingLevel = Skills.SMITHING.getSkill().getLevel();
+        startingFishingLevel = Skills.FISHING.getSkill().getLevel();
+        startingCookingLevel = Skills.COOKING.getSkill().getLevel();
+        startingFiremakingLevel = Skills.FIREMAKING.getSkill().getLevel();
+        startingWoodcuttingLevel = Skills.WOODCUTTING.getSkill().getLevel();
+        startingFarmingLevel = Skills.FARMING.getSkill().getLevel();
+        startingSummoningLevel = Skills.SUMMONING.getSkill().getLevel();
+        startingInventionLevel = Skills.INVENTION.getSkill().getLevel();
+
         super.initialize();
         this.isBackgroundScript = true;
         this.loopDelay = 600;
+        this.sgc = new SkeletonScriptGraphicsContext(getConsole(), this);
         return true;
     }
 
@@ -131,7 +306,7 @@ public class SkeletonScript extends LoopingScript {
                 }
 
                 ResultSet<Item> overload = InventoryItemQuery.newQuery()
-                        .name("overload", String::contains)
+                        .name("overload",  String::contains)
                         .results();
                 if (!overload.isEmpty()) {
                     Item overloadItem = overload.first();
@@ -153,8 +328,7 @@ public class SkeletonScript extends LoopingScript {
         if (localPlayer != null) {
             if (!isAggressionActive()) {
                 ResultSet<Item> results = InventoryItemQuery.newQuery(93)
-                        .name("Aggression flask (6)", "Aggression flask (5)", "Aggression flask (4)",
-                                "Aggression flask (3)", "Aggression flask (2)", "Aggression flask (1)")
+                        .name("Aggression", String::contains)
                         .option("Drink")
                         .results();
                 if (!results.isEmpty()) {
@@ -166,7 +340,7 @@ public class SkeletonScript extends LoopingScript {
                         } else {
                             println("Failed to use aggression potion: " + aggressionFlask.getName());
                         }
-                        Execution.delay(RandomGenerator.nextInt(700, 1000));
+                        Execution.delay(RandomGenerator.nextInt(2000, 3000));
                     }
                 } else {
                     println("No aggression flasks found.");
@@ -236,7 +410,7 @@ public class SkeletonScript extends LoopingScript {
         if (localPlayer != null) {
             if (!isCookingActive()) {
                 ResultSet<Item> results = InventoryItemQuery.newQuery(93)
-                        .name("Extreme cooking potion (1)", "Extreme cooking potion (2)", "Extreme cooking potion (3)", "Extreme cooking potion (4)")
+                        .name("cooking", String::contains)
                         .option("Drink")
                         .results();
                 if (!results.isEmpty()) {
@@ -248,7 +422,7 @@ public class SkeletonScript extends LoopingScript {
                         } else {
                             println("Failed to use cooking potion: " + cookingItem.getName());
                         }
-                        Execution.delay(RandomGenerator.nextInt(700, 1000));
+                        Execution.delay(RandomGenerator.nextInt(2000, 3000));
                     }
                 } else {
                     println("No Extreme cooking potions found.");
@@ -269,7 +443,7 @@ public class SkeletonScript extends LoopingScript {
         if (localPlayer != null) {
             if (!isDivinationActive()) {
                 ResultSet<Item> results = InventoryItemQuery.newQuery(93)
-                        .name("Extreme divination (1)", "Extreme divination (2)", "Extreme divination (3)", "Extreme divination (4)") // Matches any item with "divination" in its name
+                        .name("divination", String::contains)
                         .option("Drink")
                         .results();
                 if (!results.isEmpty()) {
@@ -281,7 +455,7 @@ public class SkeletonScript extends LoopingScript {
                         } else {
                             println("Failed to use divination potion: " + divinationItem.getName());
                         }
-                        Execution.delay(RandomGenerator.nextInt(700, 1000));
+                        Execution.delay(RandomGenerator.nextInt(2000, 3000));
                     }
                 } else {
                     println("No divination potions found.");
@@ -302,7 +476,7 @@ public class SkeletonScript extends LoopingScript {
         if (localPlayer != null) {
             if (!isHunterActive()) {
                 ResultSet<Item> results = InventoryItemQuery.newQuery(93)
-                        .name("Extreme hunter (1)", "Extreme hunter (2)", "Extreme hunter (3)", "Extreme hunter (4)")
+                        .name("hunter", String::contains)
                         .option("Drink")
                         .results();
                 if (!results.isEmpty()) {
@@ -314,7 +488,7 @@ public class SkeletonScript extends LoopingScript {
                         } else {
                             println("Failed to use hunter potion: " + hunterItem.getName());
                         }
-                        Execution.delay(RandomGenerator.nextInt(700, 1000)); // Random delay after interaction
+                        Execution.delay(RandomGenerator.nextInt(2000, 3000));
                     }
                 } else {
                     println("No hunter potions found.");
@@ -335,7 +509,7 @@ public class SkeletonScript extends LoopingScript {
             if (!isDarknessActive()) {
                 ActionBar.useAbility("Darkness");
                 println("Using darkness!");
-                Execution.delay(RandomGenerator.nextInt(700, 1000));
+                Execution.delay(RandomGenerator.nextInt(2000, 3000));
             }
         }
     }
@@ -413,7 +587,6 @@ public class SkeletonScript extends LoopingScript {
 
     public void eatFood() {
         if (getLocalPlayer() != null) {
-            // Use the healthThreshold value instead of the hardcoded 50
             if (getLocalPlayer().getCurrentHealth() * 100 / getLocalPlayer().getMaximumHealth() < healthThreshold) {
                 ResultSet<Item> food = InventoryItemQuery.newQuery(93).option("Eat").results();
                 if (!food.isEmpty()) {
