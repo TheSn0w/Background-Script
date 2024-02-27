@@ -252,7 +252,7 @@ public class SkeletonScript extends LoopingScript {
 
     @Override
     public void onLoop() {
-        if (getLocalPlayer() != null && Client.getGameState() == Client.GameState.LOGGED_IN) {
+        if (getLocalPlayer() != null && Client.getGameState() == Client.GameState.LOGGED_IN && !scriptRunning) {
             return;
         }
         if (useprayer)
