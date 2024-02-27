@@ -11,8 +11,9 @@ import java.util.HashMap;
 
 public class SkeletonScriptGraphicsContext extends ScriptGraphicsContext {
     private SkeletonScript script;
-
     private long scriptStartTime;
+    boolean isScriptRunning = false;
+
     private Instant startTime;
     private int startingXP;
     int startingAttackXP = Skills.ATTACK.getSkill().getExperience();
@@ -162,6 +163,8 @@ public class SkeletonScriptGraphicsContext extends ScriptGraphicsContext {
         ImGui.PushStyleColor(30, RGBToFloat(47), RGBToFloat(79), RGBToFloat(79), 1.0f); //Corner Extender colour
         ImGui.PushStyleColor(31, RGBToFloat(47), RGBToFloat(79), RGBToFloat(79), 1.0f); //Corner Extender colour
         ImGui.PushStyleColor(32, RGBToFloat(47), RGBToFloat(79), RGBToFloat(79), 1.0f); //Corner Extender colour
+        ImGui.PushStyleColor(33, RGBToFloat(47), RGBToFloat(79), RGBToFloat(79), 1.0f); //Corner Extender colour
+        ImGui.PushStyleColor(34, RGBToFloat(47), RGBToFloat(79), RGBToFloat(79), 1.0f); //Corner Extender colour
 
 
         ImGui.SetWindowSize(200.f, 200.f);
@@ -183,7 +186,20 @@ public class SkeletonScriptGraphicsContext extends ScriptGraphicsContext {
             ImGui.PushStyleVar(15, 10.f, 5f); // spacing between Text/tabs and checkboxes
             if (ImGui.BeginTabBar("Options", ImGuiWindowFlag.None.getValue())) {
                 if (ImGui.BeginTabItem("Item Toggles", ImGuiWindowFlag.None.getValue())) {
-                    ImGui.SeparatorText("Toggle needed options");
+                    if (isScriptRunning) {
+                        if (ImGui.Button("Stop Script")) {
+                            script.stopScript();
+                            isScriptRunning = false;
+                        }
+                    } else {
+                        if (ImGui.Button("Start Script")) {
+                            script.startScript();
+                            isScriptRunning = true;
+                        }
+                    }
+                    ImGui.SeparatorText("Food/Prayer Options");
+                    script.useSaraBrew = ImGui.Checkbox("Drink Saradomin Brew", script.useSaraBrew);
+                    script.useSaraBrewandBlubber = ImGui.Checkbox("Drink Saradomin Brew and Blubber", script.useSaraBrewandBlubber);
                     script.eatFood = ImGui.Checkbox("Eat Food", script.eatFood);
                     ImGui.SetItemWidth(40);
                     healthThresholdStr = ImGui.InputText("Health Threshold (%)", healthThresholdStr);
@@ -204,11 +220,6 @@ public class SkeletonScriptGraphicsContext extends ScriptGraphicsContext {
                     if (!healthFeedbackMessage.isEmpty()) {
                         ImGui.Text(healthFeedbackMessage);
                     }
-                    script.UseSoulSplit = ImGui.Checkbox("Use Soul Split in Combat", script.UseSoulSplit);
-                    script.useoverload = ImGui.Checkbox("Use Overloads", script.useoverload);
-                    script.useaggression = ImGui.Checkbox("Use Aggression Flask", script.useaggression);
-                    script.usedarkness = ImGui.Checkbox("Use Darkness", script.usedarkness);
-                    script.quickprayer = ImGui.Checkbox("Use Quick Prayer 1 in Combat", script.quickprayer);
                     script.useprayer = ImGui.Checkbox("Use Prayer/Restore Pots/Flasks", script.useprayer);
                     ImGui.SetItemWidth(60);
                     prayerPointsThresholdStr = ImGui.InputText("Prayer Points Threshold", prayerPointsThresholdStr);
@@ -230,9 +241,21 @@ public class SkeletonScriptGraphicsContext extends ScriptGraphicsContext {
                     if (!prayerFeedbackMessage.isEmpty()) {
                         ImGui.Text(prayerFeedbackMessage);
                     }
-                    script.useHunter = ImGui.Checkbox("Use Extreme Hunter Potion", script.useHunter);
-                    script.usedivination = ImGui.Checkbox("Use Extreme Divination Potion", script.usedivination);
-                    script.usecooking = ImGui.Checkbox("Use Extreme Cooking Potion", script.usecooking);
+                    ImGui.SeparatorText("Combat Options");
+                    script.UseSoulSplit = ImGui.Checkbox("Use Soul Split in Combat", script.UseSoulSplit);
+                    script.UseVulnBomb = ImGui.Checkbox("Use Vulnerability Bomb", script.UseVulnBomb);
+                    script.UseSmokeBomb = ImGui.Checkbox("Use Smoke Cloud", script.UseSmokeBomb);
+                    script.InvokeDeath = ImGui.Checkbox("Use Invoke Death", script.InvokeDeath);
+                    script.useoverload = ImGui.Checkbox("Use Overloads", script.useoverload);
+                    script.useaggression = ImGui.Checkbox("Use Aggression Flask", script.useaggression);
+                    script.usedarkness = ImGui.Checkbox("Use Darkness", script.usedarkness);
+                    script.quickprayer = ImGui.Checkbox("Use Quick Prayer 1 in Combat", script.quickprayer);
+                    ImGui.SeparatorText("Teleport Options");
+                    script.teleportToWarOnHealth = ImGui.Checkbox("Teleport to War's Retreat on Low Health", script.teleportToWarOnHealth);
+                    ImGui.PushStyleColor(0, RGBToFloat(134), RGBToFloat(136), RGBToFloat(138), 1.0f); //text colour
+                    ImGui.Text("Will teleport to War's Retreat if health falls below Threshold");
+                    ImGui.PopStyleColor(1);
+
 
                     long elapsedTimeMillis = System.currentTimeMillis() - this.scriptStartTime;
                     long elapsedSeconds = elapsedTimeMillis / 1000L;
@@ -244,6 +267,23 @@ public class SkeletonScriptGraphicsContext extends ScriptGraphicsContext {
 
                     ImGui.EndTabItem();
                 }
+                if (ImGui.BeginTabItem("Skilling Options", ImGuiWindowFlag.None.getValue())) {
+                    ImGui.SeparatorText("Skilling Potions");
+                    script.useHunter = ImGui.Checkbox("Use Extreme Hunter Potion", script.useHunter);
+                    script.usedivination = ImGui.Checkbox("Use Extreme Divination Potion", script.usedivination);
+                    script.usecooking = ImGui.Checkbox("Use Extreme Cooking Potion", script.usecooking);
+                    ImGui.SeparatorText("Dummy Options");
+                    ImGui.PushStyleColor(0, RGBToFloat(134), RGBToFloat(136), RGBToFloat(138), 1.0f); //text colour
+                    ImGui.Text("Go to a Remote Location where nobody else has a chance to deploy a dummy");
+                    ImGui.PopStyleColor(1);
+                    script.useMeleeDummy = ImGui.Checkbox("Use Melee Dummy", script.useMeleeDummy);
+                    script.useRangedDummy = ImGui.Checkbox("Use Ranged Dummy", script.useRangedDummy);
+                    script.useMagicDummy = ImGui.Checkbox("Use Magic Dummy", script.useMagicDummy);
+                    script.useAgilityDummy = ImGui.Checkbox("Use Agility Dummy", script.useAgilityDummy);
+                    script.useThievingDummy = ImGui.Checkbox("Use Thieving Dummy", script.useThievingDummy);
+                    ImGui.EndTabItem();
+                }
+
 
                 if (ImGui.BeginTabItem("Combat Statistics", ImGuiWindowFlag.None.getValue())) {
                     showAttackStats = ImGui.Checkbox("Show Attack Stats", showAttackStats);

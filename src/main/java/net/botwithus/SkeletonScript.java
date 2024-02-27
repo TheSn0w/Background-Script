@@ -3,16 +3,21 @@ package net.botwithus;
 import net.botwithus.api.game.hud.inventories.Backpack;
 import net.botwithus.internal.scripts.ScriptDefinition;
 import net.botwithus.rs3.game.Client;
+import net.botwithus.rs3.game.Coordinate;
 import net.botwithus.rs3.game.Item;
+import net.botwithus.rs3.game.Travel;
 import net.botwithus.rs3.game.actionbar.ActionBar;
 import net.botwithus.rs3.game.hud.interfaces.Component;
 import net.botwithus.rs3.game.hud.interfaces.Interfaces;
+import net.botwithus.rs3.game.js5.types.ItemType;
+import net.botwithus.rs3.game.queries.builders.characters.NpcQuery;
 import net.botwithus.rs3.game.queries.builders.components.ComponentQuery;
 import net.botwithus.rs3.game.queries.builders.items.GroundItemQuery;
 import net.botwithus.rs3.game.queries.builders.items.InventoryItemQuery;
 import net.botwithus.rs3.game.queries.builders.objects.SceneObjectQuery;
 import net.botwithus.rs3.game.queries.results.EntityResultSet;
 import net.botwithus.rs3.game.queries.results.ResultSet;
+import net.botwithus.rs3.game.scene.entities.characters.npc.Npc;
 import net.botwithus.rs3.game.scene.entities.characters.player.LocalPlayer;
 import net.botwithus.rs3.game.scene.entities.characters.player.Player;
 import net.botwithus.rs3.game.scene.entities.item.GroundItem;
@@ -24,14 +29,27 @@ import net.botwithus.rs3.script.LoopingScript;
 import net.botwithus.rs3.script.config.ScriptConfig;
 import net.botwithus.rs3.util.RandomGenerator;
 
+import java.time.Duration;
+import java.time.Instant;
 import java.util.Random;
 
 import static net.botwithus.rs3.game.Client.getLocalPlayer;
 import static net.botwithus.rs3.game.scene.entities.characters.player.LocalPlayer.LOCAL_PLAYER;
 
 public class SkeletonScript extends LoopingScript {
+    boolean useThievingDummy;
+    boolean useAgilityDummy;
+    boolean useMagicDummy;
+    boolean useRangedDummy;
+    boolean useMeleeDummy;
+    private boolean scriptRunning = false;
+    long runStartTime;
     private int prayerPointsThreshold = 1000;
     private int healthThreshold = 50;
+    private Instant scriptStartTime;
+    boolean teleportToWarOnHealth;
+    boolean useSaraBrew;
+    boolean useSaraBrewandBlubber;
     boolean useoverload;
     boolean useprayer;
     boolean usedarkness;
@@ -42,6 +60,9 @@ public class SkeletonScript extends LoopingScript {
     boolean useHunter;
     boolean quickprayer;
     boolean eatFood;
+    boolean UseSmokeBomb;
+    boolean UseVulnBomb;
+    boolean InvokeDeath;
     private int startingAttackLevel;
     private int startingStrengthLevel;
     private int startingDefenseLevel;
@@ -71,6 +92,7 @@ public class SkeletonScript extends LoopingScript {
     private int startingFarmingLevel;
     private int startingSummoningLevel;
     private int startingInventionLevel;
+
     public int getStartingAttackLevel() {
         return startingAttackLevel;
     }
@@ -190,40 +212,14 @@ public class SkeletonScript extends LoopingScript {
 
     @Override
     public boolean initialize() {
-        startingAttackLevel = Skills.ATTACK.getSkill().getLevel();
-        startingStrengthLevel = Skills.STRENGTH.getSkill().getLevel();
-        startingDefenseLevel = Skills.DEFENSE.getSkill().getLevel();
-        startingRangedLevel = Skills.RANGED.getSkill().getLevel();
-        startingPrayerLevel = Skills.PRAYER.getSkill().getLevel();
-        startingMagicLevel = Skills.MAGIC.getSkill().getLevel();
-        startingRunecraftingLevel = Skills.RUNECRAFTING.getSkill().getLevel();
-        startingConstructionLevel = Skills.CONSTRUCTION.getSkill().getLevel();
-        startingDungeoneeringLevel = Skills.DUNGEONEERING.getSkill().getLevel();
-        startingArchaeologyLevel = Skills.ARCHAEOLOGY.getSkill().getLevel();
-        startingConstitutionLevel = Skills.CONSTITUTION.getSkill().getLevel();
-        startingAgilityLevel = Skills.AGILITY.getSkill().getLevel();
-        startingHerbloreLevel = Skills.HERBLORE.getSkill().getLevel();
-        startingThievingLevel = Skills.THIEVING.getSkill().getLevel();
-        startingCraftingLevel = Skills.CRAFTING.getSkill().getLevel();
-        startingFletchingLevel = Skills.FLETCHING.getSkill().getLevel();
-        startingSlayerLevel = Skills.SLAYER.getSkill().getLevel();
-        startingHunterLevel = Skills.HUNTER.getSkill().getLevel();
-        startingDivinationLevel = Skills.DIVINATION.getSkill().getLevel();
-        startingNecromancyLevel = Skills.NECROMANCY.getSkill().getLevel();
-        startingMiningLevel = Skills.MINING.getSkill().getLevel();
-        startingSmithingLevel = Skills.SMITHING.getSkill().getLevel();
-        startingFishingLevel = Skills.FISHING.getSkill().getLevel();
-        startingCookingLevel = Skills.COOKING.getSkill().getLevel();
-        startingFiremakingLevel = Skills.FIREMAKING.getSkill().getLevel();
-        startingWoodcuttingLevel = Skills.WOODCUTTING.getSkill().getLevel();
-        startingFarmingLevel = Skills.FARMING.getSkill().getLevel();
-        startingSummoningLevel = Skills.SUMMONING.getSkill().getLevel();
-        startingInventionLevel = Skills.INVENTION.getSkill().getLevel();
-
+        if (Client.getGameState() == Client.GameState.LOGGED_IN) {
+            setupStartingSkillLevels();
+        }
         super.initialize();
         this.isBackgroundScript = true;
         this.loopDelay = 600;
         this.sgc = new SkeletonScriptGraphicsContext(getConsole(), this);
+        this.runStartTime = System.currentTimeMillis();
         return true;
     }
 
@@ -231,9 +227,34 @@ public class SkeletonScript extends LoopingScript {
         super(s, scriptConfig, scriptDefinition);
         this.sgc = new SkeletonScriptGraphicsContext(getConsole(), this);
     }
+    public void startScript() {
+        println("Attempting to start script..."); // Debugging line
+        if (!scriptRunning) {
+            scriptRunning = true;
+            scriptStartTime = Instant.now();
+            println("Script started at: " + scriptStartTime);
+        } else {
+            println("Attempted to start script, but it is already running.");
+        }
+    }
+
+    public void stopScript() {
+        if (scriptRunning) {
+            scriptRunning = false;
+            Instant stopTime = Instant.now();
+            println("Script stopped at: " + stopTime);
+            long duration = Duration.between(scriptStartTime, stopTime).toMillis();
+            println("Script ran for: " + duration + " milliseconds.");
+        } else {
+            println("Attempted to stop script, but it is not running.");
+        }
+    }
 
     @Override
     public void onLoop() {
+        if (getLocalPlayer() != null && Client.getGameState() == Client.GameState.LOGGED_IN) {
+            return;
+        }
         if (useprayer)
             usePrayerOrRestorePots();
         if (useoverload)
@@ -254,7 +275,30 @@ public class SkeletonScript extends LoopingScript {
             manageQuickPrayers();
         if (eatFood)
             eatFood();
+        if (UseSmokeBomb)
+            UseSmokeCloud();
+        if (UseVulnBomb)
+            useVulnBomb();
+        if (InvokeDeath)
+            Deathmark();
+        if (useSaraBrew)
+            UseSaraBrew();
+        if (useSaraBrewandBlubber)
+            UseSaraandBlubber();
+        if (teleportToWarOnHealth)
+            TeleportToWarOnHealth();
+        if (useThievingDummy)
+            UseThievingDummy();
+        if (useAgilityDummy)
+            UseAgilityDummy();
+        if (useMagicDummy)
+            UseMagicDummy();
+        if (useRangedDummy)
+            UseRangedDummy();
+        if (useMeleeDummy)
+            UseMeleeDummy();
     }
+
     public void setPrayerPointsThreshold(int threshold) {
         this.prayerPointsThreshold = threshold;
     }
@@ -296,7 +340,6 @@ public class SkeletonScript extends LoopingScript {
     }
 
 
-
     public void drinkOverloads() {
         Player localPlayer = Client.getLocalPlayer();
         if (localPlayer != null && !localPlayer.isMoving()) {
@@ -306,7 +349,7 @@ public class SkeletonScript extends LoopingScript {
                 }
 
                 ResultSet<Item> overload = InventoryItemQuery.newQuery()
-                        .name("overload",  String::contains)
+                        .name("overload", String::contains)
                         .results();
                 if (!overload.isEmpty()) {
                     Item overloadItem = overload.first();
@@ -600,5 +643,352 @@ public class SkeletonScript extends LoopingScript {
             }
         }
     }
+
+    private void useVulnBomb() {
+        if (UseVulnBomb) {
+            if (getLocalPlayer() != null && getLocalPlayer().inCombat()) {
+                // Assuming getTarget() method returns the NPC target of the local player
+                if (getLocalPlayer().getTarget() != null) {
+                    // Get the value of the varbit to check for the vulnerability debuff
+                    int vulnDebuffVarbit = VarManager.getVarbitValue(1939);
+                    if (vulnDebuffVarbit == 0) { // 0 means debuff is not active
+                        // Assuming a method exists to use an item from the action bar
+                        boolean success = ActionBar.useItem("Vulnerability bomb", "Throw");
+                        if (success) {
+                            println("Throwing Vulnerability bomb at " + getLocalPlayer().getTarget().getName());
+                            // Wait until the player is no longer in combat or the debuff is applied
+                            Execution.delayUntil(RandomGenerator.nextInt(300, 500), () -> !getLocalPlayer().inCombat());
+                        } else {
+                            println("Failed to use Vulnerability bomb!");
+                        }
+                    } else {
+                        println("Target already has the vulnerability debuff.");
+                    }
+                } else {
+                    println("No target NPC found.");
+                }
+            }
+        }
+    }
+
+    private void UseSmokeCloud() {
+        if (UseSmokeBomb) {
+            if (getLocalPlayer() != null && getLocalPlayer().inCombat()) {
+                if (getLocalPlayer().getTarget() != null) {
+                    int debuffVarbit = VarManager.getVarbitValue(49448);
+                    if (debuffVarbit == 0) { // If the debuff is not present
+                        // Attempt to use the "Smoke Cloud" ability
+                        boolean abilityUsed = ActionBar.useAbility("Smoke Cloud"); // Replace with actual method call
+                        if (abilityUsed) {
+                            println("Used 'Smoke Cloud' on " + getLocalPlayer().getTarget().getName());
+                        } else {
+                            println("Failed to use 'Smoke Cloud'");
+                        }
+                    } else {
+                        println(getLocalPlayer().getTarget().getName() + " already has the debuff.");
+                    }
+                } else {
+                    println("No target NPC found.");
+                }
+            }
+        }
+    }
+
+    private void Deathmark() {
+        if (InvokeDeath) {
+            if (Interfaces.isOpen(1490)) {
+                // Query the interface components for the specific sprite
+                ComponentQuery query = ComponentQuery.newQuery(1490); // Assuming this constructor or method exists
+                ResultSet<Component> results = query.spriteId(30100).results();
+
+                if (results.isEmpty()) {
+                    // If results are empty, the debuff sprite is not present
+                    // Use the "Invoke Death" ability
+                    ActionBar.useAbility("Invoke Death");
+                    println("Used 'Invoke Death'");
+                }
+            }
+        }
+    }
+
+    private void UseSaraBrew() {
+        if (useSaraBrew) {
+            if (Client.getLocalPlayer() != null) {
+                if (Client.getLocalPlayer().getCurrentHealth() * 100 / Client.getLocalPlayer().getMaximumHealth() < healthThreshold) {
+                    // Fetch all items in the inventory
+                    ResultSet<Item> items = InventoryItemQuery.newQuery().results();
+
+                    // Filter for Saradomin brews with the "Drink" option
+                    Item saraBrew = items.stream()
+                            .filter(item -> item.getName() != null && item.getName().toLowerCase().contains("saradomin"))
+                            .findFirst()
+                            .orElse(null);
+
+                    if (saraBrew != null) {
+                        Backpack.interact(saraBrew.getName(), "Drink");
+                        println("Drinking " + saraBrew.getName());
+                        Execution.delayUntil(RandomGenerator.nextInt(1800, 2000), () -> {
+                            LocalPlayer player = Client.getLocalPlayer();
+                            if (player != null) {
+                                double healthPercentage = (double) player.getCurrentHealth() / player.getMaximumHealth() * 100;
+                                return healthPercentage > 90;
+                            }
+                            return false; // If the player is null, return false to avoid delaying unnecessarily
+                        });
+                    } else {
+                        println("No Saradomin brews found!");
+                    }
+                }
+            }
+        }
+    }
+
+    private void UseSaraandBlubber() {
+        if (useSaraBrewandBlubber) {
+            LocalPlayer player = Client.getLocalPlayer();
+            if (player != null) {
+                double healthPercentage = (double) player.getCurrentHealth() / player.getMaximumHealth() * 100;
+                if (healthPercentage < healthThreshold) {
+                    // Fetch all items in the inventory
+                    ResultSet<Item> items = InventoryItemQuery.newQuery().results();
+
+                    // Filter for Saradomin brews with the "Drink" option
+                    Item saraBrew = items.stream()
+                            .filter(item -> item.getName() != null && item.getName().toLowerCase().contains("saradomin"))
+                            .findFirst()
+                            .orElse(null);
+
+                    if (saraBrew != null) {
+                        Backpack.interact(saraBrew.getName(), "Drink");
+                        println("Drinking " + saraBrew.getName());
+                    } else {
+                        println("No Saradomin brews found!");
+                    }
+
+                    // Similarly, filter for items containing "blubber" with the "Eat" option
+                    Item blubberItem = items.stream()
+                            .filter(item -> item.getName() != null && item.getName().toLowerCase().contains("blubber"))
+                            .findFirst()
+                            .orElse(null);
+
+                    if (blubberItem != null) {
+                        Backpack.interact(blubberItem.getName(), "Eat");
+                        println("Eating " + blubberItem.getName());
+                    } else {
+                        println("No blubber items found!");
+                    }
+
+                    // Delay until the health percentage is above 90% or until a random time between 1800 to 2000 milliseconds
+                    Execution.delayUntil(RandomGenerator.nextInt(1800, 2000), () -> {
+                        LocalPlayer currentPlayer = Client.getLocalPlayer();
+                        if (currentPlayer != null) {
+                            double currentHealthPercentage = (double) currentPlayer.getCurrentHealth() / currentPlayer.getMaximumHealth() * 100;
+                            return currentHealthPercentage > 90;
+                        }
+                        return false; // If the player is null, return false to avoid delaying unnecessarily
+                    });
+                }
+            }
+        }
+    }
+    Coordinate coords = new Coordinate(3295, 10131, 0);
+    int warsRetreatRegionId = coords.getRegionId();
+
+    private void TeleportToWarOnHealth() {
+        if (teleportToWarOnHealth) {
+            LocalPlayer player = Client.getLocalPlayer();
+            if (player != null) {
+                double healthPercentage = (double) player.getCurrentHealth() / player.getMaximumHealth() * 100;
+                if (healthPercentage < healthThreshold) {
+                    ResultSet<Item> items = InventoryItemQuery.newQuery().results();
+
+                    boolean hasHealingItem = items.stream().anyMatch(item -> {
+                        if (item.getName() != null) {
+                            if (item.getName().toLowerCase().contains("saradomin")) return true;
+                            ItemType itemType = item.getConfigType();
+                            if (itemType != null) {
+                                return itemType.getBackpackOptions().contains("Eat");
+                            }
+                        }
+                        return false;
+                    });
+
+                    if (!hasHealingItem) {
+                        println("No food or Saradomin potions found in backpack. Attempting to teleport to War's Retreat due to low health.");
+                        ActionBar.useAbility("War's Retreat Teleport");
+
+                        Execution.delay(5000); // Wait for 5000 milliseconds after using the teleport
+
+                        // Check player's current region ID after the delay
+                        Coordinate currentPosition = Client.getLocalPlayer().getCoordinate();
+                        int currentRegionId = currentPosition.getRegionId();
+                        if (currentRegionId == warsRetreatRegionId) {
+                            println("Teleport successful, player is now in War's Retreat region.");
+                            stopScript(); // Assuming stopScript() is the method to stop the script execution
+                        }
+                    }
+                }
+            }
+        }
+    }
+    private void UseThievingDummy() {
+        if (useThievingDummy) {
+            EntityResultSet<Npc> results = NpcQuery.newQuery().name("Thieving skill training dummy").option("Pickpocket").results();
+
+            if (results.isEmpty()) {
+                ActionBar.useItem("Thieving skill training dummy", "Deploy");
+                println("No available dummies. Attempting to deploy a new Thieving skill training dummy.");
+                Execution.delayUntil(RandomGenerator.nextInt(20000, 30000), () -> !NpcQuery.newQuery().name("Thieving skill training dummy").option("Pickpocket").results().isEmpty());
+                results = NpcQuery.newQuery().name("Thieving skill training dummy").option("Pickpocket").results();
+            }
+
+            for (Npc dummy : results) {
+                if (dummy.interact("Pickpocket")) {
+                    println("Successfully interacted with Thieving skill training dummy.");
+                    Execution.delayUntil(RandomGenerator.nextInt(20000, 30000), () -> !dummy.validate());
+                    break;
+                } else {
+                    println("Failed to interact with the Thieving skill training dummy.");
+                }
+            }
+
+            if (results.isEmpty()) {
+                println("The dummy is no longer available or could not be deployed.");
+            }
+        }
+    }
+
+    private void UseAgilityDummy() {
+        EntityResultSet<Npc> results = NpcQuery.newQuery().name("Agility skill training dummy").option("Practice").results();
+
+        if (results.isEmpty()) {
+            ActionBar.useItem("Agility skill training dummy", "Deploy");
+            println("No available dummies. Attempting to deploy a new Agility skill training dummy.");
+            Execution.delayUntil(RandomGenerator.nextInt(20000, 30000), () -> !NpcQuery.newQuery().name("Agility skill training dummy").option("Practice").results().isEmpty());
+            results = NpcQuery.newQuery().name("Agility skill training dummy").option("Practice").results();
+        }
+
+        for (Npc dummy : results) {
+            if (dummy.interact("Practice")) {
+                println("Successfully interacted with Agility skill training dummy.");
+                Execution.delayUntil(RandomGenerator.nextInt(20000, 30000), () -> !dummy.validate());
+                break;
+            } else {
+                println("Failed to interact with Agility skill training dummy.");
+            }
+        }
+
+        if (results.isEmpty()) {
+            println("The dummy is no longer available or could not be deployed.");
+        }
+    }
+
+    private void UseMagicDummy() {
+        EntityResultSet<Npc> results = NpcQuery.newQuery().name("Magic training dummy").option("Attack").results();
+
+        if (results.isEmpty()) {
+            ActionBar.useItem("Combat training dummy", "Deploy");
+            println("No available dummies. Attempting to deploy a new Magic training dummy.");
+            Execution.delayUntil(RandomGenerator.nextInt(20000, 30000), () -> !NpcQuery.newQuery().name("Magic training dummy").option("Attack").results().isEmpty());
+            results = NpcQuery.newQuery().name("Magic training dummy").option("Attack").results();
+        }
+
+        for (Npc dummy : results) {
+            if (dummy.interact("Attack")) {
+                println("Successfully initiated attack on the Magic training dummy.");
+                Execution.delayUntil(RandomGenerator.nextInt(20000, 30000), () -> !dummy.validate());
+                break;
+            } else {
+                println("Failed to initiate attack on the Magic training dummy.");
+            }
+        }
+
+        if (results.isEmpty()) {
+            println("The dummy is no longer available or could not be deployed.");
+        }
+    }
+
+    private void UseRangedDummy() {
+        EntityResultSet<Npc> results = NpcQuery.newQuery().name("Ranged training dummy").option("Attack").results();
+
+        if (results.isEmpty()) {
+            ActionBar.useItem("Combat training dummy", "Deploy");
+            println("No available dummies. Attempting to deploy a new Ranged training dummy.");
+            Execution.delayUntil(RandomGenerator.nextInt(20000, 30000), () -> !NpcQuery.newQuery().name("Ranged training dummy").option("Attack").results().isEmpty());
+            results = NpcQuery.newQuery().name("Ranged training dummy").option("Attack").results();
+        }
+
+        for (Npc dummy : results) {
+            if (dummy.interact("Attack")) {
+                println("Successfully initiated attack on the Ranged training dummy.");
+                Execution.delayUntil(RandomGenerator.nextInt(20000, 30000), () -> !dummy.validate());
+                break;
+            } else {
+                println("Failed to initiate attack on the Ranged training dummy.");
+            }
+        }
+
+        if (results.isEmpty()) {
+            println("The dummy is no longer available or could not be deployed.");
+        }
+    }
+
+    private void UseMeleeDummy() {
+        EntityResultSet<Npc> results = NpcQuery.newQuery().name("Melee training dummy").option("Attack").results();
+
+        if (results.isEmpty()) {
+            ActionBar.useItem("Combat training dummy", "Deploy");
+            println("No available dummies. Attempting to deploy a new Melee training dummy.");
+            Execution.delayUntil(RandomGenerator.nextInt(20000, 30000), () -> !NpcQuery.newQuery().name("Melee training dummy").option("Attack").results().isEmpty());
+            results = NpcQuery.newQuery().name("Melee training dummy").option("Attack").results();
+        }
+
+        for (Npc dummy : results) {
+            if (dummy.interact("Attack")) {
+                println("Successfully initiated attack on the Melee training dummy.");
+                Execution.delayUntil(RandomGenerator.nextInt(20000, 30000), () -> !dummy.validate());
+                break;
+            } else {
+                println("Failed to initiate attack on the Melee training dummy.");
+            }
+        }
+
+        if (results.isEmpty()) {
+            println("The dummy is no longer available or could not be deployed.");
+        }
+    }
+    private void setupStartingSkillLevels() {
+        startingAttackLevel = Skills.ATTACK.getSkill().getLevel();
+        startingStrengthLevel = Skills.STRENGTH.getSkill().getLevel();
+        startingDefenseLevel = Skills.DEFENSE.getSkill().getLevel();
+        startingRangedLevel = Skills.RANGED.getSkill().getLevel();
+        startingPrayerLevel = Skills.PRAYER.getSkill().getLevel();
+        startingMagicLevel = Skills.MAGIC.getSkill().getLevel();
+        startingRunecraftingLevel = Skills.RUNECRAFTING.getSkill().getLevel();
+        startingConstructionLevel = Skills.CONSTRUCTION.getSkill().getLevel();
+        startingDungeoneeringLevel = Skills.DUNGEONEERING.getSkill().getLevel();
+        startingArchaeologyLevel = Skills.ARCHAEOLOGY.getSkill().getLevel();
+        startingConstitutionLevel = Skills.CONSTITUTION.getSkill().getLevel();
+        startingAgilityLevel = Skills.AGILITY.getSkill().getLevel();
+        startingHerbloreLevel = Skills.HERBLORE.getSkill().getLevel();
+        startingThievingLevel = Skills.THIEVING.getSkill().getLevel();
+        startingCraftingLevel = Skills.CRAFTING.getSkill().getLevel();
+        startingFletchingLevel = Skills.FLETCHING.getSkill().getLevel();
+        startingSlayerLevel = Skills.SLAYER.getSkill().getLevel();
+        startingHunterLevel = Skills.HUNTER.getSkill().getLevel();
+        startingDivinationLevel = Skills.DIVINATION.getSkill().getLevel();
+        startingNecromancyLevel = Skills.NECROMANCY.getSkill().getLevel();
+        startingMiningLevel = Skills.MINING.getSkill().getLevel();
+        startingSmithingLevel = Skills.SMITHING.getSkill().getLevel();
+        startingFishingLevel = Skills.FISHING.getSkill().getLevel();
+        startingCookingLevel = Skills.COOKING.getSkill().getLevel();
+        startingFiremakingLevel = Skills.FIREMAKING.getSkill().getLevel();
+        startingWoodcuttingLevel = Skills.WOODCUTTING.getSkill().getLevel();
+        startingFarmingLevel = Skills.FARMING.getSkill().getLevel();
+        startingSummoningLevel = Skills.SUMMONING.getSkill().getLevel();
+        startingInventionLevel = Skills.INVENTION.getSkill().getLevel();
+    }
 }
+
+
 
