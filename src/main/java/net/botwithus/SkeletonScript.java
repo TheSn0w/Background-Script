@@ -243,7 +243,7 @@ public class SkeletonScript extends LoopingScript {
     }
 
     public void startScript() {
-        println("Attempting to start script..."); // Debugging line
+        println("Attempting to start script...");
         if (!scriptRunning) {
             scriptRunning = true;
             scriptStartTime = Instant.now();
@@ -676,16 +676,12 @@ public class SkeletonScript extends LoopingScript {
     private void useVulnBomb() {
         if (UseVulnBomb) {
             if (getLocalPlayer() != null && getLocalPlayer().inCombat()) {
-                // Assuming getTarget() method returns the NPC target of the local player
                 if (getLocalPlayer().getTarget() != null) {
-                    // Get the value of the varbit to check for the vulnerability debuff
                     int vulnDebuffVarbit = VarManager.getVarbitValue(1939);
                     if (vulnDebuffVarbit == 0) { // 0 means debuff is not active
-                        // Assuming a method exists to use an item from the action bar
                         boolean success = ActionBar.useItem("Vulnerability bomb", "Throw");
                         if (success) {
                             println("Throwing Vulnerability bomb at " + getLocalPlayer().getTarget().getName());
-                            // Wait until the player is no longer in combat or the debuff is applied
                             Execution.delayUntil(RandomGenerator.nextInt(300, 500), () -> !getLocalPlayer().inCombat());
                         } else {
                             println("Failed to use Vulnerability bomb!");
@@ -705,9 +701,8 @@ public class SkeletonScript extends LoopingScript {
             if (getLocalPlayer() != null && getLocalPlayer().inCombat()) {
                 if (getLocalPlayer().getTarget() != null) {
                     int debuffVarbit = VarManager.getVarbitValue(49448);
-                    if (debuffVarbit == 0) { // If the debuff is not present
-                        // Attempt to use the "Smoke Cloud" ability
-                        boolean abilityUsed = ActionBar.useAbility("Smoke Cloud"); // Replace with actual method call
+                    if (debuffVarbit == 0) {
+                        boolean abilityUsed = ActionBar.useAbility("Smoke Cloud");
                         if (abilityUsed) {
                             println("Used 'Smoke Cloud' on " + getLocalPlayer().getTarget().getName());
                         } else {
@@ -726,13 +721,10 @@ public class SkeletonScript extends LoopingScript {
     private void Deathmark() {
         if (InvokeDeath) {
             if (Interfaces.isOpen(1490)) {
-                // Query the interface components for the specific sprite
-                ComponentQuery query = ComponentQuery.newQuery(1490); // Assuming this constructor or method exists
+                ComponentQuery query = ComponentQuery.newQuery(1490);
                 ResultSet<Component> results = query.spriteId(30100).results();
 
                 if (results.isEmpty()) {
-                    // If results are empty, the debuff sprite is not present
-                    // Use the "Invoke Death" ability
                     ActionBar.useAbility("Invoke Death");
                     println("Used 'Invoke Death'");
                 }
@@ -744,10 +736,8 @@ public class SkeletonScript extends LoopingScript {
         if (useSaraBrew) {
             if (Client.getLocalPlayer() != null) {
                 if (Client.getLocalPlayer().getCurrentHealth() * 100 / Client.getLocalPlayer().getMaximumHealth() < healthThreshold) {
-                    // Fetch all items in the inventory
                     ResultSet<Item> items = InventoryItemQuery.newQuery().results();
 
-                    // Filter for Saradomin brews with the "Drink" option
                     Item saraBrew = items.stream()
                             .filter(item -> item.getName() != null && item.getName().toLowerCase().contains("saradomin"))
                             .findFirst()
@@ -762,7 +752,7 @@ public class SkeletonScript extends LoopingScript {
                                 double healthPercentage = (double) player.getCurrentHealth() / player.getMaximumHealth() * 100;
                                 return healthPercentage > 90;
                             }
-                            return false; // If the player is null, return false to avoid delaying unnecessarily
+                            return false;
                         });
                     } else {
                         println("No Saradomin brews found!");
@@ -778,10 +768,8 @@ public class SkeletonScript extends LoopingScript {
             if (player != null) {
                 double healthPercentage = (double) player.getCurrentHealth() / player.getMaximumHealth() * 100;
                 if (healthPercentage < healthThreshold) {
-                    // Fetch all items in the inventory
                     ResultSet<Item> items = InventoryItemQuery.newQuery().results();
 
-                    // Filter for Saradomin brews with the "Drink" option
                     Item saraBrew = items.stream()
                             .filter(item -> item.getName() != null && item.getName().toLowerCase().contains("saradomin"))
                             .findFirst()
@@ -794,7 +782,6 @@ public class SkeletonScript extends LoopingScript {
                         println("No Saradomin brews found!");
                     }
 
-                    // Similarly, filter for items containing "blubber" with the "Eat" option
                     Item blubberItem = items.stream()
                             .filter(item -> item.getName() != null && item.getName().toLowerCase().contains("blubber"))
                             .findFirst()
@@ -813,7 +800,7 @@ public class SkeletonScript extends LoopingScript {
                             double currentHealthPercentage = (double) currentPlayer.getCurrentHealth() / currentPlayer.getMaximumHealth() * 100;
                             return currentHealthPercentage > 90;
                         }
-                        return false; // If the player is null, return false to avoid delaying unnecessarily
+                        return false;
                     });
                 }
             }
@@ -846,14 +833,13 @@ public class SkeletonScript extends LoopingScript {
                         println("No food or Saradomin potions found in backpack. Attempting to teleport to War's Retreat due to low health.");
                         ActionBar.useAbility("War's Retreat Teleport");
 
-                        Execution.delay(5000); // Wait for 5000 milliseconds after using the teleport
+                        Execution.delay(5000);
 
-                        // Check player's current region ID after the delay
                         Coordinate currentPosition = Client.getLocalPlayer().getCoordinate();
                         int currentRegionId = currentPosition.getRegionId();
                         if (currentRegionId == warsRetreatRegionId) {
                             println("Teleport successful, player is now in War's Retreat region.");
-                            stopScript(); // Assuming stopScript() is the method to stop the script execution
+                            stopScript();
                         }
                     }
                 }
@@ -1025,16 +1011,13 @@ public class SkeletonScript extends LoopingScript {
         if (Logout) {
             if (System.currentTimeMillis() >= targetLogoutTimeMillis && targetLogoutTimeMillis != 0) {
                 println("Logout time reached.");
-                // Loop to check if the player is in combat, and wait until they are not
                 while (Client.getLocalPlayer() != null && Client.getLocalPlayer().inCombat()) {
                     println("Player is in combat, waiting until combat ends to logout.");
-                    Execution.delay(1000); // Wait for 1 second before checking again
+                    Execution.delay(1000);
                 }
-                // Once the player is not in combat or null, attempt to logout
                 println("Player is no longer in combat, attempting to logout.");
                 if (performLogout()) {
                     println("Logout successful.");
-                    // Reset targetLogoutTimeMillis if you want to stop checking
                     targetLogoutTimeMillis = 0;
                 } else {
                     println("Failed to logout.");
