@@ -2,6 +2,7 @@ package net.botwithus;
 
 import net.botwithus.api.game.hud.inventories.Backpack;
 import net.botwithus.internal.scripts.ScriptDefinition;
+import net.botwithus.rs3.events.impl.SkillUpdateEvent;
 import net.botwithus.rs3.game.Client;
 import net.botwithus.rs3.game.Coordinate;
 import net.botwithus.rs3.game.Item;
@@ -10,6 +11,8 @@ import net.botwithus.rs3.game.actionbar.ActionBar;
 import net.botwithus.rs3.game.hud.interfaces.Component;
 import net.botwithus.rs3.game.hud.interfaces.Interfaces;
 import net.botwithus.rs3.game.js5.types.ItemType;
+import net.botwithus.rs3.game.minimenu.MiniMenu;
+import net.botwithus.rs3.game.minimenu.actions.ComponentAction;
 import net.botwithus.rs3.game.queries.builders.characters.NpcQuery;
 import net.botwithus.rs3.game.queries.builders.components.ComponentQuery;
 import net.botwithus.rs3.game.queries.builders.items.GroundItemQuery;
@@ -22,6 +25,7 @@ import net.botwithus.rs3.game.scene.entities.characters.player.LocalPlayer;
 import net.botwithus.rs3.game.scene.entities.characters.player.Player;
 import net.botwithus.rs3.game.scene.entities.item.GroundItem;
 import net.botwithus.rs3.game.scene.entities.object.SceneObject;
+import net.botwithus.rs3.game.skills.Skill;
 import net.botwithus.rs3.game.skills.Skills;
 import net.botwithus.rs3.game.vars.VarManager;
 import net.botwithus.rs3.script.Execution;
@@ -31,6 +35,7 @@ import net.botwithus.rs3.util.RandomGenerator;
 
 import java.time.Duration;
 import java.time.Instant;
+import java.util.Objects;
 import java.util.Random;
 
 import static net.botwithus.rs3.game.Client.getLocalPlayer;
@@ -38,6 +43,15 @@ import static net.botwithus.rs3.game.scene.entities.characters.player.LocalPlaye
 
 public class SkeletonScript extends LoopingScript {
     boolean useThievingDummy;
+    private long targetLogoutTimeMillis = 0;
+    boolean Logout;
+
+    boolean usePenance;
+    boolean useProtection;
+    boolean KwuarmIncence;
+    boolean TorstolIncence;
+    boolean LantadymeIncence;
+    boolean overloadEnabled;
     boolean useAgilityDummy;
     boolean useMagicDummy;
     boolean useRangedDummy;
@@ -227,6 +241,7 @@ public class SkeletonScript extends LoopingScript {
         super(s, scriptConfig, scriptDefinition);
         this.sgc = new SkeletonScriptGraphicsContext(getConsole(), this);
     }
+
     public void startScript() {
         println("Attempting to start script..."); // Debugging line
         if (!scriptRunning) {
@@ -255,6 +270,8 @@ public class SkeletonScript extends LoopingScript {
         if (getLocalPlayer() != null && Client.getGameState() == Client.GameState.LOGGED_IN && !scriptRunning) {
             return;
         }
+        if (Logout)
+            checkAndPerformLogout();
         if (useprayer)
             usePrayerOrRestorePots();
         if (useoverload)
@@ -297,6 +314,16 @@ public class SkeletonScript extends LoopingScript {
             UseRangedDummy();
         if (useMeleeDummy)
             UseMeleeDummy();
+        if (KwuarmIncence)
+            KwuarmincenceSticks();
+        if (TorstolIncence)
+            TorstolIncenseSticks();
+        if (LantadymeIncence)
+            LantadymeIncenseSticks();
+        if (usePenance)
+            Penance();
+        if (useProtection)
+            Protection();
     }
 
     public void setPrayerPointsThreshold(int threshold) {
@@ -353,6 +380,7 @@ public class SkeletonScript extends LoopingScript {
                         .results();
                 if (!overload.isEmpty()) {
                     Item overloadItem = overload.first();
+                    assert overloadItem != null;
                     Backpack.interact(overloadItem.getName(), "Drink");
                     println("Drinking overload " + overloadItem.getName() + " ID: " + overloadItem.getId());
                     Execution.delay(RandomGenerator.nextInt(10, 20));
@@ -634,6 +662,7 @@ public class SkeletonScript extends LoopingScript {
                 ResultSet<Item> food = InventoryItemQuery.newQuery(93).option("Eat").results();
                 if (!food.isEmpty()) {
                     Item eat = food.first();
+                    assert eat != null;
                     Backpack.interact(eat.getName(), 1);
                     println("Eating " + eat.getName());
                     Execution.delayUntil(RandomGenerator.nextInt(300, 500), () -> getLocalPlayer().getCurrentHealth() > 8000);
@@ -778,7 +807,6 @@ public class SkeletonScript extends LoopingScript {
                         println("No blubber items found!");
                     }
 
-                    // Delay until the health percentage is above 90% or until a random time between 1800 to 2000 milliseconds
                     Execution.delayUntil(RandomGenerator.nextInt(1800, 2000), () -> {
                         LocalPlayer currentPlayer = Client.getLocalPlayer();
                         if (currentPlayer != null) {
@@ -791,6 +819,7 @@ public class SkeletonScript extends LoopingScript {
             }
         }
     }
+
     Coordinate coords = new Coordinate(3295, 10131, 0);
     int warsRetreatRegionId = coords.getRegionId();
 
@@ -831,6 +860,7 @@ public class SkeletonScript extends LoopingScript {
             }
         }
     }
+
     private void UseThievingDummy() {
         if (useThievingDummy) {
             EntityResultSet<Npc> results = NpcQuery.newQuery().name("Thieving skill training dummy").option("Pickpocket").results();
@@ -957,6 +987,7 @@ public class SkeletonScript extends LoopingScript {
             println("The dummy is no longer available or could not be deployed.");
         }
     }
+
     private void setupStartingSkillLevels() {
         startingAttackLevel = Skills.ATTACK.getSkill().getLevel();
         startingStrengthLevel = Skills.STRENGTH.getSkill().getLevel();
@@ -987,6 +1018,179 @@ public class SkeletonScript extends LoopingScript {
         startingFarmingLevel = Skills.FARMING.getSkill().getLevel();
         startingSummoningLevel = Skills.SUMMONING.getSkill().getLevel();
         startingInventionLevel = Skills.INVENTION.getSkill().getLevel();
+    }
+
+
+    public void checkAndPerformLogout() {
+        if (Logout) {
+            if (System.currentTimeMillis() >= targetLogoutTimeMillis && targetLogoutTimeMillis != 0) {
+                println("Logout time reached.");
+                // Loop to check if the player is in combat, and wait until they are not
+                while (Client.getLocalPlayer() != null && Client.getLocalPlayer().inCombat()) {
+                    println("Player is in combat, waiting until combat ends to logout.");
+                    Execution.delay(1000); // Wait for 1 second before checking again
+                }
+                // Once the player is not in combat or null, attempt to logout
+                println("Player is no longer in combat, attempting to logout.");
+                if (performLogout()) {
+                    println("Logout successful.");
+                    // Reset targetLogoutTimeMillis if you want to stop checking
+                    targetLogoutTimeMillis = 0;
+                } else {
+                    println("Failed to logout.");
+                }
+            }
+        }
+    }
+
+    public boolean performLogout() {
+        MiniMenu.interact(ComponentAction.COMPONENT.getType(), 1, 7, 93782016);
+        println("Opening Settings menu.");
+        Execution.delay(RandomGenerator.nextInt(800, 1000));
+        boolean logoutMenuOpened = Execution.delayUntil(1000L, () -> Interfaces.isOpen(1433));
+        if (logoutMenuOpened) {
+            Execution.delay(RandomGenerator.nextInt(1000, 2000));
+            MiniMenu.interact(ComponentAction.COMPONENT.getType(), 1, -1, 93913159);
+            println("Attempting to interact with logout button.");
+            Execution.delay(RandomGenerator.nextInt(1000, 3000));
+            this.stopScript();
+            return true;
+        } else {
+            this.println("Could not find or interact with the logout button.");
+            return false;
+        }
+    }
+
+    public void setTargetLogoutTimeMillis(long targetLogoutTimeMillis) {
+        this.targetLogoutTimeMillis = targetLogoutTimeMillis;
+    }
+
+    public long getTargetLogoutTimeMillis() {
+        return this.targetLogoutTimeMillis;
+    }
+
+    private void KwuarmincenceSticks() {
+        if (KwuarmIncence) {
+            ResultSet<Item> backpackResults = InventoryItemQuery.newQuery(93)
+                    .name("Kwuarm incence sticks")
+                    .results();
+
+            if (!backpackResults.isEmpty()) {
+                ResultSet<Component> componentResults = ComponentQuery.newQuery(284)
+                        .spriteId(47709)
+                        .results();
+
+                if (componentResults.isEmpty()) {
+                    Item itemToInteract = backpackResults.first();
+
+                    String option = "Light";
+                    if (overloadEnabled) {
+                        option = "Overload";
+                    }
+
+                    if (Backpack.interact(option)) {
+                        println("Interaction successful with option: " + option);
+                    } else {
+                        println("Failed to interact with the item using option: " + option);
+                    }
+                }
+            }
+        }
+    }
+    private void LantadymeIncenseSticks() {
+        if (LantadymeIncence) {
+            ResultSet<Item> backpackResults = InventoryItemQuery.newQuery(93)
+                    .name("Lantadyme incence sticks")
+                    .results();
+
+            if (!backpackResults.isEmpty()) {
+                ResultSet<Component> componentResults = ComponentQuery.newQuery(284)
+                        .spriteId(47713)
+                        .results();
+
+                if (componentResults.isEmpty()) {
+                    Item itemToInteract = backpackResults.first();
+
+                    String option = "Light";
+                    if (overloadEnabled) {
+                        option = "Overload";
+                    }
+
+                    if (Backpack.interact(option)) {
+                        println("Interaction successful with option: " + option);
+                    } else {
+                        println("Failed to interact with the item using option: " + option);
+                    }
+                }
+            }
+        }
+    }
+    private void TorstolIncenseSticks() {
+        if (TorstolIncence) {
+            ResultSet<Item> backpackResults = InventoryItemQuery.newQuery(93)
+                    .name("Torstol incence sticks")
+                    .results();
+
+            if (!backpackResults.isEmpty()) {
+                ResultSet<Component> componentResults = ComponentQuery.newQuery(284)
+                        .spriteId(47715)
+                        .results();
+
+                if (componentResults.isEmpty()) {
+                    Item itemToInteract = backpackResults.first();
+
+                    String option = "Light";
+                    if (overloadEnabled) {
+                        option = "Overload";
+                    }
+
+                    if (Backpack.interact(option)) {
+                        println("Interaction successful with option: " + option);
+                    } else {
+                        println("Failed to interact with the item using option: " + option);
+                    }
+                }
+            }
+        }
+    }
+    private void Penance() {
+        if (usePenance) {
+            ResultSet<Item> results = InventoryItemQuery.newQuery(93).ids(52806).option("Scatter").results();
+            boolean varbitNotSet = VarManager.getVarbitValue(50841) == 0;
+
+            if (!results.isEmpty() && varbitNotSet) {
+                Execution.delay(RandomGenerator.nextInt(1000, 2000));
+                Item itemToInteract = results.first();
+                if (itemToInteract != null) {
+                    boolean interacted = Backpack.interact(itemToInteract.getName(), "Scatter");
+                    if (interacted) {
+                        println("Interacted with Powder of Penance.");
+                    } else {
+                        println("Failed to interact with Powder of Penance.");
+                    }
+                }
+            }
+        }
+    }
+
+    private void Protection() {
+        if (useProtection) {
+            ResultSet<Item> results = InventoryItemQuery.newQuery(93).ids(52802).option("Scatter").results();
+            boolean varbitNotSet = VarManager.getVarbitValue(50837) == 0;
+
+            if (!results.isEmpty() && varbitNotSet) {
+                Execution.delay(RandomGenerator.nextInt(1000, 2000));
+                Item itemToInteract = results.first();
+                if (itemToInteract != null) {
+                    boolean interacted = Backpack.interact(itemToInteract.getName(), "Scatter");
+                    if (interacted) {
+                        println("Interacted with Powder of Protection.");
+                    } else {
+                        println("Failed to interact with Powder of Protection.");
+                    }
+                }
+            }
+        }
     }
 }
 

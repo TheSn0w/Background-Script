@@ -6,13 +6,24 @@ import net.botwithus.rs3.imgui.ImGuiWindowFlag;
 import net.botwithus.rs3.script.ScriptConsole;
 import net.botwithus.rs3.script.ScriptGraphicsContext;
 
+import java.sql.Timestamp;
 import java.time.Instant;
+import java.time.LocalDateTime;
+import java.time.LocalTime;
+import java.time.format.DateTimeFormatter;
+import java.time.format.DateTimeParseException;
 import java.util.HashMap;
 
 public class SkeletonScriptGraphicsContext extends ScriptGraphicsContext {
     private SkeletonScript script;
+    private String logoutTimeStr = ""; // HH:MM format
+
+
     private long scriptStartTime;
     boolean isScriptRunning = false;
+    private String logoutHoursStr = "0"; // Default to 0 hours
+    private String logoutMinutesStr = "0"; // Default to 0 minutes
+    private long targetLogoutTimeMillis = 0;
 
     private Instant startTime;
     private int startingXP;
@@ -107,6 +118,7 @@ public class SkeletonScriptGraphicsContext extends ScriptGraphicsContext {
 
     private String healthFeedbackMessage = "";
     private String prayerFeedbackMessage = "";
+    private String logoutFeedbackMessage = "";
     private String prayerPointsThresholdStr = "1000";
     private String healthThresholdStr = "50";
     private static float RGBToFloat(int rgbValue) {
@@ -255,6 +267,28 @@ public class SkeletonScriptGraphicsContext extends ScriptGraphicsContext {
                     ImGui.PushStyleColor(0, RGBToFloat(134), RGBToFloat(136), RGBToFloat(138), 1.0f); //text colour
                     ImGui.Text("Will teleport to War's Retreat if health falls below Threshold");
                     ImGui.PopStyleColor(1);
+                    ImGui.SeparatorText("Miscellaneous Options");
+                    script.KwuarmIncence = ImGui.Checkbox("Use Kwuarm Incense Sticks", script.KwuarmIncence);
+                    if (script.KwuarmIncence) {
+                        ImGui.SameLine();
+                        script.overloadEnabled = ImGui.Checkbox("Overload?", script.overloadEnabled);
+                    }
+
+// For Torstol Incense
+                    script.TorstolIncence = ImGui.Checkbox("Use Torstol Incense Sticks", script.TorstolIncence);
+                    if (script.TorstolIncence) {
+                        ImGui.SameLine();
+                        script.overloadEnabled = ImGui.Checkbox("Overload?", script.overloadEnabled);
+                    }
+
+// For Lantadyme Incense
+                    script.LantadymeIncence = ImGui.Checkbox("Use Lantadyme Incense Sticks", script.LantadymeIncence);
+                    if (script.LantadymeIncence) {
+                        ImGui.SameLine();
+                        script.overloadEnabled = ImGui.Checkbox("Overload?", script.overloadEnabled);
+                    }
+                    script.usePenance = ImGui.Checkbox("Use Powder of Penance", script.usePenance);
+                    script.useProtection = ImGui.Checkbox("Use Powder of Protection", script.useProtection);
 
 
                     long elapsedTimeMillis = System.currentTimeMillis() - this.scriptStartTime;
@@ -264,6 +298,48 @@ public class SkeletonScriptGraphicsContext extends ScriptGraphicsContext {
                     long seconds = elapsedSeconds % 60L;
                     String displayTimeRunning = String.format("%02d:%02d:%02d", hours, minutes, seconds);
                     ImGui.SeparatorText("Time Running  " + displayTimeRunning);
+
+                    ImGui.EndTabItem();
+                }
+                if (ImGui.BeginTabItem("Logout Timer Setup", ImGuiWindowFlag.None.getValue())) {
+                    script.Logout = ImGui.Checkbox("Use Logout", script.Logout);
+                    ImGui.SeparatorText("Make sure the Script is started before setting logout timer");
+                    ImGui.PopStyleColor(1);
+                    ImGui.SetItemWidth(50);
+                    logoutHoursStr = ImGui.InputText("Hours until logout", logoutHoursStr);
+                    ImGui.SetItemWidth(50);
+                    logoutMinutesStr = ImGui.InputText("Minutes until logout", logoutMinutesStr);
+                    if (ImGui.Button("Set Logout Timer")) {
+                        try {
+                            int hours = Integer.parseInt(logoutHoursStr.trim());
+                            int minutes = Integer.parseInt(logoutMinutesStr.trim());
+                            if (hours < 0 || minutes < 0) {
+                                logoutFeedbackMessage = "Please enter a valid positive number for hours and minutes.";
+                            } else {
+                                long currentTimeMillis = System.currentTimeMillis();
+                                long calculatedTargetLogoutTimeMillis = currentTimeMillis + hours * 3600000 + minutes * 60000;
+                                script.setTargetLogoutTimeMillis(calculatedTargetLogoutTimeMillis);
+                                logoutFeedbackMessage = String.format("Logout timer set for %d hours and %d minutes from now.", hours, minutes);
+                            }
+                        } catch (NumberFormatException e) {
+                            logoutFeedbackMessage = "Please enter a valid number for hours and minutes.";
+                        }
+                    }
+                    if (!logoutFeedbackMessage.isEmpty()) {
+                        ImGui.Text(logoutFeedbackMessage);
+                    }
+
+                    // Display Countdown until Logout
+                    long remainingTimeMillis = script.getTargetLogoutTimeMillis() - System.currentTimeMillis();
+                    if (remainingTimeMillis > 0) {
+                        long hours = remainingTimeMillis / 3600000;
+                        long minutes = (remainingTimeMillis % 3600000) / 60000;
+                        long seconds = (remainingTimeMillis % 60000) / 1000;
+                        String countdownMessage = String.format("Time until logout: %02d:%02d:%02d", hours, minutes, seconds);
+                        ImGui.Text(countdownMessage);
+                    } else {
+                        ImGui.SeparatorText("Logout timer is not set or has expired.");
+                    }
 
                     ImGui.EndTabItem();
                 }
@@ -527,6 +603,4 @@ public class SkeletonScriptGraphicsContext extends ScriptGraphicsContext {
             return "Calculating time to next level...";
         }
     }
-
-
 }
