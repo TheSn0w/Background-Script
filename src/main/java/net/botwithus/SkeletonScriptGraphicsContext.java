@@ -254,6 +254,9 @@ public class SkeletonScriptGraphicsContext extends ScriptGraphicsContext {
                         ImGui.Text(prayerFeedbackMessage);
                     }
                     ImGui.SeparatorText("Combat Options");
+                    ImGui.PushStyleColor(0, RGBToFloat(134), RGBToFloat(136), RGBToFloat(138), 1.0f); //text colour
+                    ImGui.Text("Have on action bar");
+                    ImGui.PopStyleColor(1);
                     script.UseSoulSplit = ImGui.Checkbox("Use Soul Split in Combat", script.UseSoulSplit);
                     script.UseVulnBomb = ImGui.Checkbox("Use Vulnerability Bomb", script.UseVulnBomb);
                     script.UseSmokeBomb = ImGui.Checkbox("Use Smoke Cloud", script.UseSmokeBomb);
@@ -289,9 +292,6 @@ public class SkeletonScriptGraphicsContext extends ScriptGraphicsContext {
                     }
                     script.usePenance = ImGui.Checkbox("Use Powder of Penance", script.usePenance);
                     script.useProtection = ImGui.Checkbox("Use Powder of Protection", script.useProtection);
-                    script.useLightForm = ImGui.Checkbox("Use Light Form", script.useLightForm);
-                    script.useCrystalMask = ImGui.Checkbox("Use Crystal Mask", script.useCrystalMask);
-                    script.useSuperheatForm = ImGui.Checkbox("Use Superheat Form", script.useSuperheatForm);
 
 
                     long elapsedTimeMillis = System.currentTimeMillis() - this.scriptStartTime;
@@ -348,15 +348,32 @@ public class SkeletonScriptGraphicsContext extends ScriptGraphicsContext {
                 }
                 if (ImGui.BeginTabItem("Skilling Options", ImGuiWindowFlag.None.getValue())) {
                     ImGui.SeparatorText("Skilling Potions");
+                    script.useLightForm = ImGui.Checkbox("Use Light Form", script.useLightForm);
+                    ImGui.PushStyleColor(0, RGBToFloat(134), RGBToFloat(136), RGBToFloat(138), 1.0f); //text colour
+                    ImGui.SameLine();
+                    ImGui.Text("Have on action bar");
+                    ImGui.PopStyleColor(1);
+                    script.useCrystalMask = ImGui.Checkbox("Use Crystal Mask", script.useCrystalMask);
+                    ImGui.PushStyleColor(0, RGBToFloat(134), RGBToFloat(136), RGBToFloat(138), 1.0f); //text colour
+                    ImGui.SameLine();
+                    ImGui.Text("Have on action bar");
+                    ImGui.PopStyleColor(1);
+                    script.useSuperheatForm = ImGui.Checkbox("Use Superheat Form", script.useSuperheatForm);
+                    ImGui.PushStyleColor(0, RGBToFloat(134), RGBToFloat(136), RGBToFloat(138), 1.0f); //text colour
+                    ImGui.SameLine();
+                    ImGui.Text("Have on action bar");
+                    ImGui.PopStyleColor(1);
                     script.useNecromancyPotion = ImGui.Checkbox("Use Necromancy Potion", script.useNecromancyPotion);
+                    ImGui.PushStyleColor(0, RGBToFloat(134), RGBToFloat(136), RGBToFloat(138), 1.0f); //text colour
+                    ImGui.SameLine();
+                    ImGui.Text("Use any variant of >necromancy< potions/flasks etc");
+                    ImGui.PopStyleColor(1);
                     script.useHunter = ImGui.Checkbox("Use Extreme Hunter Potion", script.useHunter);
                     script.usedivination = ImGui.Checkbox("Use Extreme Divination Potion", script.usedivination);
                     script.usecooking = ImGui.Checkbox("Use Extreme Cooking Potion", script.usecooking);
-                    ImGui.SameLine();
-                    ImGui.Text("Crystallise will be used on the Acadia tree");
                     ImGui.SeparatorText("Dummy Options");
                     ImGui.PushStyleColor(0, RGBToFloat(134), RGBToFloat(136), RGBToFloat(138), 1.0f); //text colour
-                    ImGui.Text("Go to a Remote Location where nobody else has a chance to deploy a dummy");
+                    ImGui.Text("Go to a Remote Location where nobody else has a chance to deploy a dummy + Place on action bar");
                     ImGui.PopStyleColor(1);
                     script.useMeleeDummy = ImGui.Checkbox("Use Melee Dummy", script.useMeleeDummy);
                     script.useRangedDummy = ImGui.Checkbox("Use Ranged Dummy", script.useRangedDummy);
