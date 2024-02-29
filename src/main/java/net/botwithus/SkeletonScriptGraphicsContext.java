@@ -289,6 +289,9 @@ public class SkeletonScriptGraphicsContext extends ScriptGraphicsContext {
                     }
                     script.usePenance = ImGui.Checkbox("Use Powder of Penance", script.usePenance);
                     script.useProtection = ImGui.Checkbox("Use Powder of Protection", script.useProtection);
+                    script.useLightForm = ImGui.Checkbox("Use Light Form", script.useLightForm);
+                    script.useCrystalMask = ImGui.Checkbox("Use Crystal Mask", script.useCrystalMask);
+                    script.useSuperheatForm = ImGui.Checkbox("Use Superheat Form", script.useSuperheatForm);
 
 
                     long elapsedTimeMillis = System.currentTimeMillis() - this.scriptStartTime;
@@ -345,6 +348,7 @@ public class SkeletonScriptGraphicsContext extends ScriptGraphicsContext {
                 }
                 if (ImGui.BeginTabItem("Skilling Options", ImGuiWindowFlag.None.getValue())) {
                     ImGui.SeparatorText("Skilling Potions");
+                    script.useNecromancyPotion = ImGui.Checkbox("Use Necromancy Potion", script.useNecromancyPotion);
                     script.useHunter = ImGui.Checkbox("Use Extreme Hunter Potion", script.useHunter);
                     script.usedivination = ImGui.Checkbox("Use Extreme Divination Potion", script.usedivination);
                     script.usecooking = ImGui.Checkbox("Use Extreme Cooking Potion", script.usecooking);

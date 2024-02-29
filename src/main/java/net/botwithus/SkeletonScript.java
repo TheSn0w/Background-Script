@@ -43,8 +43,12 @@ import static net.botwithus.rs3.game.scene.entities.characters.player.LocalPlaye
 
 public class SkeletonScript extends LoopingScript {
     boolean useThievingDummy;
+    boolean useNecromancyPotion;
     private long targetLogoutTimeMillis = 0;
     boolean Logout;
+    boolean useLightForm;
+    boolean useSuperheatForm;
+    boolean useCrystalMask;
 
     boolean usePenance;
     boolean useProtection;
@@ -324,6 +328,18 @@ public class SkeletonScript extends LoopingScript {
             Penance();
         if (useProtection)
             Protection();
+        if (useLightForm)
+            LightFormActivation();
+        if (!useLightForm)
+            deactivateLightForm();
+        if (useCrystalMask)
+            CystalMask();
+        if (useSuperheatForm)
+            SuperheatFormActivation();
+        if (!useSuperheatForm)
+            deactivateSuperheatForm();
+        if (useNecromancyPotion)
+            NecromancyPotion();
     }
 
     public void setPrayerPointsThreshold(int threshold) {
@@ -1080,6 +1096,7 @@ public class SkeletonScript extends LoopingScript {
             }
         }
     }
+
     private void LantadymeIncenseSticks() {
         if (LantadymeIncence) {
             ResultSet<Item> backpackResults = InventoryItemQuery.newQuery(93)
@@ -1108,6 +1125,7 @@ public class SkeletonScript extends LoopingScript {
             }
         }
     }
+
     private void TorstolIncenseSticks() {
         if (TorstolIncence) {
             ResultSet<Item> backpackResults = InventoryItemQuery.newQuery(93)
@@ -1136,6 +1154,7 @@ public class SkeletonScript extends LoopingScript {
             }
         }
     }
+
     private void Penance() {
         if (usePenance) {
             ResultSet<Item> results = InventoryItemQuery.newQuery(93).ids(52806).option("Scatter").results();
@@ -1175,6 +1194,119 @@ public class SkeletonScript extends LoopingScript {
             }
         }
     }
+
+    private boolean isCrystalMaskActive() {
+        ComponentQuery query = ComponentQuery.newQuery(284).spriteId(25938);
+        ResultSet<Component> results = query.results();
+
+        return !results.isEmpty();
+    }
+
+
+    private void CystalMask() {
+        if (useCrystalMask && !isCrystalMaskActive()) {
+            println("Activating Crystal Mask.");
+            if (ActionBar.useAbility("Crystal Mask")) {
+                println("Crystal Mask activated successfully.");
+                Execution.delay(RandomGenerator.nextInt(1000, 2000));
+            } else {
+                println("Failed to activate Crystal Mask.");
+            }
+        }
+    }
+
+    private boolean lightFormActive = false;
+
+
+    private void LightFormActivation() {
+        if (useLightForm) {
+            int lightFormEnabled = VarManager.getVarbitValue(29066);
+            if (!lightFormActive && lightFormEnabled != 1) {
+                activateLightForm();
+            } else if (lightFormActive && lightFormEnabled == 1 && !useLightForm) {
+                deactivateLightForm();
+            }
+        }
+    }
+
+    private void activateLightForm() {
+        ActionBar.useAbility("Light Form");
+        println("Light Form activated.");
+        Execution.delay(RandomGenerator.nextInt(1000, 2000));
+    }
+
+    private void deactivateLightForm() {
+        int lightFormEnabled = VarManager.getVarbitValue(29066);
+        if (lightFormEnabled == 1) {
+            ActionBar.useAbility("Light Form");
+            println("Light Form deactivated.");
+            Execution.delay(RandomGenerator.nextInt(1000, 2000));
+        }
+    }
+    private boolean superheatFormActive = false;
+
+    private void SuperheatFormActivation() {
+        if (useSuperheatForm) {
+            int superheatFormEnabled = VarManager.getVarbitValue(29071);
+            if (!superheatFormActive && superheatFormEnabled != 1) {
+                activateSuperheatForm();
+            } else if (superheatFormActive && superheatFormEnabled == 1 && !useSuperheatForm) {
+                deactivateSuperheatForm();
+            }
+        }
+    }
+
+    private void activateSuperheatForm() {
+        ActionBar.useAbility("Superheat Form");
+        println("Superheat Form activated.");
+        Execution.delay(RandomGenerator.nextInt(1000, 2000));
+        superheatFormActive = true; // Update the state to reflect activation
+    }
+
+    private void deactivateSuperheatForm() {
+        int superheatFormEnabled = VarManager.getVarbitValue(29071);
+        if (superheatFormEnabled == 1) {
+            ActionBar.useAbility("Superheat Form");
+            println("Superheat Form deactivated.");
+            Execution.delay(RandomGenerator.nextInt(1000, 2000));
+            superheatFormActive = false; // Update the state to reflect deactivation
+        }
+    }
+    private boolean isNecromancyActive() {
+        Component necromancy = ComponentQuery.newQuery(284) // Assuming this interface ID is correct; adjust if necessary
+                .spriteId(30125) // Updated sprite ID for Necromancy
+                .results().first();
+        return necromancy != null;
+    }
+
+    private void NecromancyPotion() {
+        Player localPlayer = Client.getLocalPlayer();
+        if (localPlayer != null) {
+            if (!isNecromancyActive()) {
+                ResultSet<Item> results = InventoryItemQuery.newQuery(93)
+                        .name("necromancy", String::contains)
+                        .option("Drink")
+                        .results();
+                if (!results.isEmpty()) {
+                    Item necromancyItem = results.first();
+                    if (necromancyItem != null) {
+                        boolean success = Backpack.interact(necromancyItem.getName(), "Drink");
+                        if (success) {
+                            println("Using necromancy item: " + necromancyItem.getName());
+                        } else {
+                            println("Failed to use necromancy item: " + necromancyItem.getName());
+                        }
+                        Execution.delay(RandomGenerator.nextInt(2000, 3000));
+                    }
+                } else {
+                    println("No necromancy items found.");
+                }
+            } else {
+                println("Necromancy boost is already active.");
+            }
+        }
+    }
+
 }
 
 
