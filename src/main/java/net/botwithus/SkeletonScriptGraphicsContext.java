@@ -352,6 +352,8 @@ public class SkeletonScriptGraphicsContext extends ScriptGraphicsContext {
                     script.useHunter = ImGui.Checkbox("Use Extreme Hunter Potion", script.useHunter);
                     script.usedivination = ImGui.Checkbox("Use Extreme Divination Potion", script.usedivination);
                     script.usecooking = ImGui.Checkbox("Use Extreme Cooking Potion", script.usecooking);
+                    ImGui.SameLine();
+                    ImGui.Text("Crystallise will be used on the Acadia tree");
                     ImGui.SeparatorText("Dummy Options");
                     ImGui.PushStyleColor(0, RGBToFloat(134), RGBToFloat(136), RGBToFloat(138), 1.0f); //text colour
                     ImGui.Text("Go to a Remote Location where nobody else has a chance to deploy a dummy");

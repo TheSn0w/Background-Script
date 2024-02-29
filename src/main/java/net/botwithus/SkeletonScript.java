@@ -1,6 +1,7 @@
 package net.botwithus;
 
 import net.botwithus.api.game.hud.inventories.Backpack;
+import net.botwithus.rs3.game.minimenu.MiniMenu;
 import net.botwithus.internal.scripts.ScriptDefinition;
 import net.botwithus.rs3.events.impl.SkillUpdateEvent;
 import net.botwithus.rs3.game.Client;
@@ -39,6 +40,8 @@ import java.util.Objects;
 import java.util.Random;
 
 import static net.botwithus.rs3.game.Client.getLocalPlayer;
+import static net.botwithus.rs3.game.minimenu.actions.SelectableAction.SELECTABLE_COMPONENT;
+import static net.botwithus.rs3.game.minimenu.actions.SelectableAction.SELECT_OBJECT;
 import static net.botwithus.rs3.game.scene.entities.characters.player.LocalPlayer.LOCAL_PLAYER;
 
 public class SkeletonScript extends LoopingScript {
@@ -1243,6 +1246,7 @@ public class SkeletonScript extends LoopingScript {
             Execution.delay(RandomGenerator.nextInt(1000, 2000));
         }
     }
+
     private boolean superheatFormActive = false;
 
     private void SuperheatFormActivation() {
@@ -1272,6 +1276,7 @@ public class SkeletonScript extends LoopingScript {
             superheatFormActive = false; // Update the state to reflect deactivation
         }
     }
+
     private boolean isNecromancyActive() {
         Component necromancy = ComponentQuery.newQuery(284) // Assuming this interface ID is correct; adjust if necessary
                 .spriteId(30125) // Updated sprite ID for Necromancy
@@ -1307,6 +1312,30 @@ public class SkeletonScript extends LoopingScript {
         }
     }
 
+    /*private void Crystallise() {
+        if (useCrystallise) {
+            ComponentQuery componentQuery = ComponentQuery.newQuery().spriteId(25939);
+            if (componentQuery.results().isEmpty()) {
+                println("Crystallise is NOT active.");
+
+                EntityResultSet<SceneObject> trees = SceneObjectQuery.newQuery().name("Acadia tree").results();
+                SceneObject closestTree = trees.nearestTo(Client.getLocalPlayer().getCoordinate());
+
+                if (closestTree != null) {
+                    MiniMenu.interact(SELECTABLE_COMPONENT.getType(), 0, 181, 95748097);
+                    Execution.delay(1000);
+                    MiniMenu.interact(SELECT_OBJECT.getType(), 109007, 3192, 95748097);
+
+                    println("Casting Crystallise on the closest tree: " + closestTree.getName());
+                } else {
+                    println("No tree found close to the player.");
+                }
+            } else {
+                println("Crystallise is active.");
+            }
+        }
+
+    }*/
 }
 
 
