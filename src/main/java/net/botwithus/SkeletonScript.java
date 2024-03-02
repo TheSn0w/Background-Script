@@ -1,32 +1,25 @@
 package net.botwithus;
 
 import net.botwithus.api.game.hud.inventories.Backpack;
+import net.botwithus.api.game.hud.inventories.Equipment;
 import net.botwithus.rs3.game.minimenu.MiniMenu;
 import net.botwithus.internal.scripts.ScriptDefinition;
-import net.botwithus.rs3.events.impl.SkillUpdateEvent;
 import net.botwithus.rs3.game.Client;
 import net.botwithus.rs3.game.Coordinate;
 import net.botwithus.rs3.game.Item;
-import net.botwithus.rs3.game.Travel;
 import net.botwithus.rs3.game.actionbar.ActionBar;
 import net.botwithus.rs3.game.hud.interfaces.Component;
 import net.botwithus.rs3.game.hud.interfaces.Interfaces;
 import net.botwithus.rs3.game.js5.types.ItemType;
-import net.botwithus.rs3.game.minimenu.MiniMenu;
 import net.botwithus.rs3.game.minimenu.actions.ComponentAction;
 import net.botwithus.rs3.game.queries.builders.characters.NpcQuery;
 import net.botwithus.rs3.game.queries.builders.components.ComponentQuery;
-import net.botwithus.rs3.game.queries.builders.items.GroundItemQuery;
 import net.botwithus.rs3.game.queries.builders.items.InventoryItemQuery;
-import net.botwithus.rs3.game.queries.builders.objects.SceneObjectQuery;
 import net.botwithus.rs3.game.queries.results.EntityResultSet;
 import net.botwithus.rs3.game.queries.results.ResultSet;
 import net.botwithus.rs3.game.scene.entities.characters.npc.Npc;
 import net.botwithus.rs3.game.scene.entities.characters.player.LocalPlayer;
 import net.botwithus.rs3.game.scene.entities.characters.player.Player;
-import net.botwithus.rs3.game.scene.entities.item.GroundItem;
-import net.botwithus.rs3.game.scene.entities.object.SceneObject;
-import net.botwithus.rs3.game.skills.Skill;
 import net.botwithus.rs3.game.skills.Skills;
 import net.botwithus.rs3.game.vars.VarManager;
 import net.botwithus.rs3.script.Execution;
@@ -36,16 +29,18 @@ import net.botwithus.rs3.util.RandomGenerator;
 
 import java.time.Duration;
 import java.time.Instant;
-import java.util.Objects;
-import java.util.Random;
 
 import static net.botwithus.rs3.game.Client.getLocalPlayer;
-import static net.botwithus.rs3.game.minimenu.actions.SelectableAction.SELECTABLE_COMPONENT;
-import static net.botwithus.rs3.game.minimenu.actions.SelectableAction.SELECT_OBJECT;
 import static net.botwithus.rs3.game.scene.entities.characters.player.LocalPlayer.LOCAL_PLAYER;
 
 public class SkeletonScript extends LoopingScript {
     boolean useThievingDummy;
+    boolean UseDeathGrasp;
+    boolean UseScriptureOfJas;
+    boolean UseScriptureOfFul;
+    boolean UseScriptureOfWen;
+    boolean useExcalibur;
+    boolean useAntifire;
     boolean useNecromancyPotion;
     private long targetLogoutTimeMillis = 0;
     boolean Logout;
@@ -343,6 +338,18 @@ public class SkeletonScript extends LoopingScript {
             deactivateSuperheatForm();
         if (useNecromancyPotion)
             NecromancyPotion();
+        if (useAntifire)
+            antifirePotion();
+        if (useExcalibur)
+            activateExcalibur();
+        if (UseScriptureOfWen)
+            manageScriptureOfWen();
+        if (UseScriptureOfJas)
+            manageScriptureOfJas();
+        if (UseScriptureOfFul)
+            manageScriptureOfFul();
+        if (UseDeathGrasp)
+            DeathGrasp();
     }
 
     public void setPrayerPointsThreshold(int threshold) {
@@ -1312,31 +1319,281 @@ public class SkeletonScript extends LoopingScript {
         }
     }
 
-    /*private void Crystallise() {
-        if (useCrystallise) {
-            ComponentQuery componentQuery = ComponentQuery.newQuery().spriteId(25939);
-            if (componentQuery.results().isEmpty()) {
-                println("Crystallise is NOT active.");
+    private boolean isantifireActive() {
+        Component necromancy = ComponentQuery.newQuery(284) // Assuming this interface ID is correct; adjust if necessary
+                .spriteId(30093) // Updated sprite ID for Necromancy
+                .results().first();
+        return necromancy != null;
+    }
 
-                EntityResultSet<SceneObject> trees = SceneObjectQuery.newQuery().name("Acadia tree").results();
-                SceneObject closestTree = trees.nearestTo(Client.getLocalPlayer().getCoordinate());
+    private void antifirePotion() {
+        if (useAntifire) {
+            Player localPlayer = Client.getLocalPlayer();
+            if (localPlayer != null) {
+                if (!isantifireActive()) {
+                    ResultSet<Item> items = InventoryItemQuery.newQuery(93).results();
+                    Item antifireItem = items.stream()
+                            .filter(item -> item.getName() != null && item.getName().toLowerCase().contains("antifire"))
+                            .findFirst()
+                            .orElse(null);
 
-                if (closestTree != null) {
-                    MiniMenu.interact(SELECTABLE_COMPONENT.getType(), 0, 181, 95748097);
-                    Execution.delay(1000);
-                    MiniMenu.interact(SELECT_OBJECT.getType(), 109007, 3192, 95748097);
-
-                    println("Casting Crystallise on the closest tree: " + closestTree.getName());
+                    if (antifireItem != null) {
+                        Backpack.interact(antifireItem.getName(), "Drink");
+                        println("Drinking " + antifireItem.getName());
+                    } else {
+                        println("No Antifire potions found!");
+                    }
                 } else {
-                    println("No tree found close to the player.");
+                    println("Antifire boost is already active.");
                 }
-            } else {
-                println("Crystallise is active.");
             }
         }
+    }
 
-    }*/
+    private boolean isExcaliburActive() {
+        Component excaliburComponent = ComponentQuery.newQuery(291)
+                .spriteId(14632)
+                .results().first();
+        return excaliburComponent != null;
+    }
+
+    private void activateExcalibur() {
+        Player localPlayer = Client.getLocalPlayer();
+        if (localPlayer != null) {
+            if (localPlayer.getCurrentHealth() * 100 / localPlayer.getMaximumHealth() < healthThreshold) {
+                if (!isExcaliburActive()) {
+                    ResultSet<Item> items = InventoryItemQuery.newQuery(93).results();
+                    Item excaliburItem = items.stream()
+                            .filter(item -> item.getName() != null && item.getName().toLowerCase().contains("excalibur"))
+                            .findFirst()
+                            .orElse(null);
+
+                    if (excaliburItem != null) {
+                        Backpack.interact(excaliburItem.getName(), "Activate");
+                        println("Activating " + excaliburItem.getName());
+                    } else {
+                        println("No Excalibur found!");
+                    }
+                } else {
+                    println("Excalibur is on CD.");
+                }
+            } else {
+                println("Health is above threshold, no need to activate Excalibur.");
+            }
+        }
+    }
+
+    private boolean scriptureOfWenActive = false;
+
+    public void manageScriptureOfWen() {
+        if (LOCAL_PLAYER.inCombat() && !scriptureOfWenActive) {
+            updateScriptureOfWenActivation();
+        } else if (!LOCAL_PLAYER.inCombat() && scriptureOfWenActive) {
+            updateScriptureOfWenActivation();
+        }
+    }
+
+    private void updateScriptureOfWenActivation() {
+        // Querying the component to check if Scripture of Wen is active
+        boolean isActive = isScriptureOfWenActive();
+
+        boolean shouldBeActive = shouldActivateScriptureOfWen();
+
+        if (shouldBeActive && !isActive) {
+            activateScriptureOfWen();
+        } else if (!shouldBeActive && isActive) {
+            deactivateScriptureOfWen();
+        }
+    }
+
+    private boolean isScriptureOfWenActive() {
+        // Using component query to check if Scripture of Wen is active
+        ComponentQuery query = ComponentQuery.newQuery(284).spriteId(52117);
+        ResultSet<Component> results = query.results();
+        // If the component with the specific sprite id exists, then Scripture of Wen is considered active
+        return !results.isEmpty();
+    }
+
+    private void activateScriptureOfWen() {
+        if (!scriptureOfWenActive) {
+            println("Activating Scripture of Wen.");
+            if (Equipment.interact(Equipment.Slot.POCKET, "Activate/Deactivate")) {
+                println("Scripture of Wen activated successfully.");
+                scriptureOfWenActive = true;
+            } else {
+                println("Failed to activate Scripture of Wen.");
+            }
+        }
+    }
+
+    private void deactivateScriptureOfWen() {
+        if (scriptureOfWenActive) {
+            println("Deactivating Scripture of Wen.");
+            if (Equipment.interact(Equipment.Slot.POCKET, "Activate/Deactivate")) {
+                println("Scripture of Wen deactivated.");
+                scriptureOfWenActive = false;
+            } else {
+                println("Failed to deactivate Scripture of Wen.");
+            }
+        }
+    }
+
+    private boolean shouldActivateScriptureOfWen() {
+        return LOCAL_PLAYER.inCombat() && (UseScriptureOfWen); // Assuming UseScriptureOfWen is a condition you define
+    }
+
+    private boolean scriptureOfJasActive = false;
+
+    public void manageScriptureOfJas() {
+        if (LOCAL_PLAYER.inCombat() && !scriptureOfJasActive) {
+            updateScriptureOfJasActivation();
+        } else if (!LOCAL_PLAYER.inCombat() && scriptureOfJasActive) {
+            updateScriptureOfJasActivation();
+        }
+    }
+
+    private void updateScriptureOfJasActivation() {
+        // Querying the component to check if Scripture of Jas is active
+        boolean isActive = isScriptureOfJasActive();
+
+        boolean shouldBeActive = shouldActivateScriptureOfJas();
+
+        if (shouldBeActive && !isActive) {
+            activateScriptureOfJas();
+        } else if (!shouldBeActive && isActive) {
+            deactivateScriptureOfJas();
+        }
+    }
+
+    private boolean isScriptureOfJasActive() {
+        // Using component query to check if Scripture of Jas is active
+        ComponentQuery query = ComponentQuery.newQuery(284).spriteId(51814);
+        ResultSet<Component> results = query.results();
+        // If the component with the specific sprite id exists, then Scripture of Jas is considered active
+        return !results.isEmpty();
+    }
+
+    private void activateScriptureOfJas() {
+        if (!scriptureOfJasActive) {
+            println("Activating Scripture of Jas.");
+            if (Equipment.interact(Equipment.Slot.POCKET, "Activate")) {
+                println("Scripture of Jas activated successfully.");
+                scriptureOfJasActive = true;
+            } else {
+                println("Failed to activate Scripture of Jas.");
+            }
+        }
+    }
+
+    private void deactivateScriptureOfJas() {
+        if (scriptureOfJasActive) {
+            println("Deactivating Scripture of Jas.");
+            if (Equipment.interact(Equipment.Slot.POCKET, "Deactivate")) {
+                println("Scripture of Jas deactivated.");
+                scriptureOfJasActive = false;
+            } else {
+                println("Failed to deactivate Scripture of Jas.");
+            }
+        }
+    }
+
+    private boolean shouldActivateScriptureOfJas() {
+        return LOCAL_PLAYER.inCombat() && (UseScriptureOfJas); // Assuming UseScriptureOfJas is a condition you define
+    }
+
+    private boolean scriptureOfFulActive = false;
+
+    public void manageScriptureOfFul() {
+        if (LOCAL_PLAYER.inCombat() && !scriptureOfFulActive) {
+            updateScriptureOfFulActivation();
+        } else if (!LOCAL_PLAYER.inCombat() && scriptureOfFulActive) {
+            updateScriptureOfFulActivation();
+        }
+    }
+
+    private void updateScriptureOfFulActivation() {
+        // Querying the component to check if Scripture of Ful is active
+        boolean isActive = isScriptureOfFulActive();
+
+        boolean shouldBeActive = shouldActivateScriptureOfFul();
+
+        if (shouldBeActive && !isActive) {
+            activateScriptureOfFul();
+        } else if (!shouldBeActive && isActive) {
+            deactivateScriptureOfFul();
+        }
+    }
+
+    private boolean isScriptureOfFulActive() {
+        // Using component query to check if Scripture of Ful is active
+        ComponentQuery query = ComponentQuery.newQuery(284).spriteId(52494);
+        ResultSet<Component> results = query.results();
+        // If the component with the specific sprite id exists, then Scripture of Ful is considered active
+        return !results.isEmpty();
+    }
+
+    private void activateScriptureOfFul() {
+        if (!scriptureOfFulActive) {
+            println("Activating Scripture of Ful.");
+            if (Equipment.interact(Equipment.Slot.POCKET, "Activate")) {
+                println("Scripture of Ful activated successfully.");
+                scriptureOfFulActive = true;
+            } else {
+                println("Failed to activate Scripture of Ful.");
+            }
+        }
+    }
+
+    private void deactivateScriptureOfFul() {
+        if (scriptureOfFulActive) {
+            println("Deactivating Scripture of Ful.");
+            if (Equipment.interact(Equipment.Slot.POCKET, "Deactivate")) {
+                println("Scripture of Ful deactivated.");
+                scriptureOfFulActive = false;
+            } else {
+                println("Failed to deactivate Scripture of Ful.");
+            }
+        }
+    }
+
+    private boolean shouldActivateScriptureOfFul() {
+        return LOCAL_PLAYER.inCombat() && (UseScriptureOfFul); // Assuming UseScriptureOfFul is a condition you define
+    }
+
+    private void DeathGrasp() {
+        // Check if the 'UseDeathGrasp' condition is met (this variable's declaration and assignment are not shown)
+        if (UseDeathGrasp) {
+            // Ensure the local player exists and is in combat
+            if (getLocalPlayer() != null && getLocalPlayer().inCombat()) {
+                // Ensure the local player has a target
+                if (getLocalPlayer().getTarget() != null) {
+                    // Check if the local player's adrenaline is over 25%
+                    if (getLocalPlayer().getAdrenaline() > 25) {
+                        // Query for a component with a specific sprite ID on interface 291
+                        // Note: This assumes a method `getAdrenaline()` exists that returns adrenaline as a percentage
+                        if (ComponentQuery.newQuery(291).spriteId(55524).results().isEmpty()) {
+                            // Use the ability 'Death's Grasp' if the sprite is not active
+                            boolean abilityUsed = ActionBar.useAbility("Death Grasp");
+                            if (abilityUsed) {
+                                println("Used 'Death's Grasp' on " + getLocalPlayer().getTarget().getName());
+                            } else {
+                                println("Failed to use 'Death's Grasp'");
+                            }
+                        } else {
+                            println(getLocalPlayer().getTarget().getName() + " already has the debuff.");
+                        }
+                    } else {
+                        println("Insufficient adrenaline for 'Death's Grasp'.");
+                    }
+                } else {
+                    println("No target NPC found.");
+                }
+            }
+        }
+    }
 }
+
+
 
 
 

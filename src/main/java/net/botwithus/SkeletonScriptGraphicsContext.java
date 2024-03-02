@@ -265,6 +265,8 @@ public class SkeletonScriptGraphicsContext extends ScriptGraphicsContext {
                     script.useaggression = ImGui.Checkbox("Use Aggression Flask", script.useaggression);
                     script.usedarkness = ImGui.Checkbox("Use Darkness", script.usedarkness);
                     script.quickprayer = ImGui.Checkbox("Use Quick Prayer 1 in Combat", script.quickprayer);
+                    script.useExcalibur = ImGui.Checkbox("Use Excalibur", script.useExcalibur);
+                    script.UseDeathGrasp = ImGui.Checkbox("Use Death's Grasp in EOF", script.UseDeathGrasp);
                     ImGui.SeparatorText("Teleport Options");
                     script.teleportToWarOnHealth = ImGui.Checkbox("Teleport to War's Retreat on Low Health", script.teleportToWarOnHealth);
                     ImGui.PushStyleColor(0, RGBToFloat(134), RGBToFloat(136), RGBToFloat(138), 1.0f); //text colour
@@ -292,6 +294,35 @@ public class SkeletonScriptGraphicsContext extends ScriptGraphicsContext {
                     }
                     script.usePenance = ImGui.Checkbox("Use Powder of Penance", script.usePenance);
                     script.useProtection = ImGui.Checkbox("Use Powder of Protection", script.useProtection);
+                    script.useAntifire = ImGui.Checkbox("Use Antifire variant", script.useAntifire);
+                    boolean tempUseScriptureOfWen = script.UseScriptureOfWen;
+                    if (ImGui.Checkbox("Use Scripture of Wen in Combat", tempUseScriptureOfWen)) {
+                        script.UseScriptureOfWen = true;
+                        script.UseScriptureOfJas = false;
+                        script.UseScriptureOfFul = false;
+                    } else if (script.UseScriptureOfWen) {
+                        script.UseScriptureOfWen = false;
+                    }
+
+// Use Scripture of Jas
+                    boolean tempUseScriptureOfJas = script.UseScriptureOfJas;
+                    if (ImGui.Checkbox("Use Scripture of Jas in Combat", tempUseScriptureOfJas)) {
+                        script.UseScriptureOfWen = false;
+                        script.UseScriptureOfJas = true;
+                        script.UseScriptureOfFul = false;
+                    } else if (script.UseScriptureOfJas) {
+                        script.UseScriptureOfJas = false;
+                    }
+
+// Use Scripture of Ful
+                    boolean tempUseScriptureOfFul = script.UseScriptureOfFul;
+                    if (ImGui.Checkbox("Use Scripture of Ful in Combat", tempUseScriptureOfFul)) {
+                        script.UseScriptureOfWen = false;
+                        script.UseScriptureOfJas = false;
+                        script.UseScriptureOfFul = true;
+                    } else if (script.UseScriptureOfFul) {
+                        script.UseScriptureOfFul = false;
+                    }
 
 
                     long elapsedTimeMillis = System.currentTimeMillis() - this.scriptStartTime;
@@ -348,6 +379,7 @@ public class SkeletonScriptGraphicsContext extends ScriptGraphicsContext {
                 }
                 if (ImGui.BeginTabItem("Skilling Options", ImGuiWindowFlag.None.getValue())) {
                     ImGui.SeparatorText("Skilling Potions");
+
                     script.useLightForm = ImGui.Checkbox("Use Light Form", script.useLightForm);
                     ImGui.PushStyleColor(0, RGBToFloat(134), RGBToFloat(136), RGBToFloat(138), 1.0f); //text colour
                     ImGui.SameLine();
