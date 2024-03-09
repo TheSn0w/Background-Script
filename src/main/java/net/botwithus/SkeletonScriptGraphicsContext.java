@@ -266,7 +266,7 @@ public class SkeletonScriptGraphicsContext extends ScriptGraphicsContext {
                     script.usedarkness = ImGui.Checkbox("Use Darkness", script.usedarkness);
                     script.quickprayer = ImGui.Checkbox("Use Quick Prayer 1 in Combat", script.quickprayer);
                     script.useExcalibur = ImGui.Checkbox("Use Excalibur", script.useExcalibur);
-                    script.UseDeathGrasp = ImGui.Checkbox("Use Death's Grasp in EOF", script.UseDeathGrasp);
+                   // script.UseDeathGrasp = ImGui.Checkbox("Use Death's Grasp in EOF", script.UseDeathGrasp);
                     ImGui.SeparatorText("Teleport Options");
                     script.teleportToWarOnHealth = ImGui.Checkbox("Teleport to War's Retreat on Low Health", script.teleportToWarOnHealth);
                     ImGui.PushStyleColor(0, RGBToFloat(134), RGBToFloat(136), RGBToFloat(138), 1.0f); //text colour
