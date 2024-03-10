@@ -48,6 +48,9 @@ public class SkeletonScript extends LoopingScript {
     boolean useLightForm;
     boolean useSuperheatForm;
     boolean useCrystalMask;
+    boolean useAncientElven;
+    boolean useWeaponPoison;
+
 
     boolean usePenance;
     boolean useProtection;
@@ -61,7 +64,7 @@ public class SkeletonScript extends LoopingScript {
     boolean useMeleeDummy;
     private boolean scriptRunning = false;
     long runStartTime;
-    private int prayerPointsThreshold = 1000;
+    private int prayerPointsThreshold = 5000;
     private int healthThreshold = 50;
     private Instant scriptStartTime;
     boolean teleportToWarOnHealth;
@@ -227,7 +230,6 @@ public class SkeletonScript extends LoopingScript {
     }
 
 
-
     public SkeletonScript(String s, ScriptConfig scriptConfig, ScriptDefinition scriptDefinition) {
         super(s, scriptConfig, scriptDefinition);
         this.sgc = new SkeletonScriptGraphicsContext(getConsole(), this);
@@ -239,6 +241,7 @@ public class SkeletonScript extends LoopingScript {
         this.loopDelay = RandomGenerator.nextInt(1000, 1200);
         this.sgc = new SkeletonScriptGraphicsContext(getConsole(), this);
         this.runStartTime = System.currentTimeMillis();
+        loadConfiguration();
     }
 
     public void startScript() {
@@ -263,13 +266,14 @@ public class SkeletonScript extends LoopingScript {
             println("Attempted to stop script, but it is not running.");
         }
     }
-    private boolean hasUsedInvokeDeath = false;
+
 
     @Override
     public void onLoop() {
         if (getLocalPlayer() != null && Client.getGameState() == Client.GameState.LOGGED_IN && !scriptRunning) {
             return;
         }
+        saveConfiguration();
         if (Logout)
             checkAndPerformLogout();
         if (useprayer)
@@ -346,6 +350,10 @@ public class SkeletonScript extends LoopingScript {
             manageScriptureOfJas();
         if (UseScriptureOfFul)
             manageScriptureOfFul();
+        if (useWeaponPoison)
+            useWeaponPoison();
+        if (useAncientElven)
+            manageAncientElven();
     }
 
     public void setPrayerPointsThreshold(int threshold) {
@@ -1592,9 +1600,138 @@ public class SkeletonScript extends LoopingScript {
             }
         }
     }
-}
+
+    public void useWeaponPoison() {
+        Player localPlayer = getLocalPlayer();
+        if (localPlayer != null && !localPlayer.isMoving()) {
+            if (!hasComponentWithSpriteId(284, 30095)) {
+
+                ResultSet<Item> items = InventoryItemQuery.newQuery()
+                        .results();
+
+                Item weaponPoisonItem = items.stream()
+                        .filter(item -> item.getName() != null &&
+                                item.getName().toLowerCase().contains("weapon poison"))
+                        .findFirst()
+                        .orElse(null);
+
+                if (weaponPoisonItem != null) {
+                    println("Applying " + weaponPoisonItem.getName() + " ID: " + weaponPoisonItem.getId());
+                    boolean success = Backpack.interact(weaponPoisonItem.getName(), "Apply");
+                    Execution.delay(RandomGenerator.nextInt(600, 650));
+
+                    if (!success) {
+                        println("Failed to apply " + weaponPoisonItem.getName());
+                    }
+                } else {
+                    println("No weapon poison found!");
+                }
+            }
+        }
+    }
+
+    private boolean hasComponentWithSpriteId(int interfaceId, int spriteId) {
+        ResultSet<Component> components = ComponentQuery.newQuery(interfaceId)
+                .spriteId(spriteId)
+                .results();
+        return !components.isEmpty();
+    }
+
+    private void manageAncientElven() {
+        if (getLocalPlayer() != null) {
+
+            int currentPrayerPoints = LocalPlayer.LOCAL_PLAYER.getPrayerPoints();
+
+            if (currentPrayerPoints < prayerPointsThreshold && !hasComponentWithSpriteId(291, 43358)) {
+                InventoryItemQuery.newQuery(93).name("Ancient elven ritual shard").results();
+                Backpack.interact("Ancient elven ritual shard", "Activate");
+                println("Activated Ancient Elven Ritual Shard at: " + currentPrayerPoints + " prayer points.");
+                Execution.delayUntil(10000, () -> hasComponentWithSpriteId(284, 43358));
+            }
+        }
+    }
+    public void saveConfiguration() { //CIPHER PLEASE HELP ME WITH GETTING THE ADJUSTABLE SETTINGS TO SAVE, I DMED YOU BUT NO REPLY
+        // Saving boolean settings
+        this.configuration.addProperty("UseScriptureOfWen", String.valueOf(this.UseScriptureOfWen));
+        this.configuration.addProperty("UseScriptureOfJas", String.valueOf(this.UseScriptureOfJas));
+        this.configuration.addProperty("UseScriptureOfFul", String.valueOf(this.UseScriptureOfFul));
+        this.configuration.addProperty("UseWeaponPoison", String.valueOf(this.useWeaponPoison));
+        this.configuration.addProperty("UseAncientElven", String.valueOf(this.useAncientElven));
+        this.configuration.addProperty("UseAntifire", String.valueOf(this.useAntifire));
+        this.configuration.addProperty("UseExcalibur", String.valueOf(this.useExcalibur));
+        this.configuration.addProperty("UseNecromancyPotion", String.valueOf(this.useNecromancyPotion));
+        this.configuration.addProperty("UseSuperheatForm", String.valueOf(this.useSuperheatForm));
+        this.configuration.addProperty("UseCrystalMask", String.valueOf(this.useCrystalMask));
+        this.configuration.addProperty("UseLightForm", String.valueOf(this.useLightForm));
+        this.configuration.addProperty("UseProtection", String.valueOf(this.useProtection));
+        this.configuration.addProperty("UsePenance", String.valueOf(this.usePenance));
+        this.configuration.addProperty("TorstolIncence", String.valueOf(this.TorstolIncence));
+        this.configuration.addProperty("KwuarmIncence", String.valueOf(this.KwuarmIncence));
+        this.configuration.addProperty("LantadymeIncence", String.valueOf(this.LantadymeIncence));
+        this.configuration.addProperty("teleportToWarOnHealth", String.valueOf(this.teleportToWarOnHealth));
+        this.configuration.addProperty("InvokeDeath", String.valueOf(this.InvokeDeath));
+        this.configuration.addProperty("UseVulnBomb", String.valueOf(this.UseVulnBomb));
+        this.configuration.addProperty("UseSmokeBomb", String.valueOf(this.UseSmokeBomb));
+        this.configuration.addProperty("quickprayer", String.valueOf(this.quickprayer));
+        this.configuration.addProperty("usedarkness", String.valueOf(this.usedarkness));
+        this.configuration.addProperty("useHunter", String.valueOf(this.useHunter));
+        this.configuration.addProperty("usedivination", String.valueOf(this.usedivination));
+        this.configuration.addProperty("usecooking", String.valueOf(this.usecooking));
+        this.configuration.addProperty("useaggression", String.valueOf(this.useaggression));
+        this.configuration.addProperty("UseSoulSplit", String.valueOf(this.UseSoulSplit));
+        this.configuration.addProperty("useoverload", String.valueOf(this.useoverload));
+        this.configuration.addProperty("useprayer", String.valueOf(this.useprayer));
+        this.configuration.addProperty("eatFood", String.valueOf(this.eatFood));
+        this.configuration.addProperty("useSaraBrewandBlubber", String.valueOf(this.useSaraBrewandBlubber));
+        this.configuration.addProperty("useSaraBrew", String.valueOf(this.useSaraBrew));
+        this.configuration.addProperty("healthThreshold", String.valueOf(this.healthThreshold));
+        this.configuration.addProperty("prayerPointsThreshold", String.valueOf(this.prayerPointsThreshold));
 
 
+        this.configuration.save();
+    }
 
 
+    public void loadConfiguration() {
+        try {
+            this.useSaraBrew = Boolean.parseBoolean(this.configuration.getProperty("useSaraBrew"));
+            this.useSaraBrewandBlubber = Boolean.parseBoolean(this.configuration.getProperty("useSaraBrewandBlubber"));
+            this.eatFood = Boolean.parseBoolean(this.configuration.getProperty("eatFood"));
+            this.useprayer = Boolean.parseBoolean(this.configuration.getProperty("usePrayer"));
+            this.useoverload = Boolean.parseBoolean(this.configuration.getProperty("useOverload"));
+            this.UseSoulSplit = Boolean.parseBoolean(this.configuration.getProperty("UseSoulSplit"));
+            this.useaggression = Boolean.parseBoolean(this.configuration.getProperty("useAggression"));
+            this.usecooking = Boolean.parseBoolean(this.configuration.getProperty("useCooking"));
+            this.usedivination = Boolean.parseBoolean(this.configuration.getProperty("useDivination"));
+            this.useHunter = Boolean.parseBoolean(this.configuration.getProperty("useHunter"));
+            this.usedarkness = Boolean.parseBoolean(this.configuration.getProperty("usedarkness"));
+            this.quickprayer = Boolean.parseBoolean(this.configuration.getProperty("quickprayer"));
+            this.UseSmokeBomb = Boolean.parseBoolean(this.configuration.getProperty("UseSmokeBomb"));
+            this.UseVulnBomb = Boolean.parseBoolean(this.configuration.getProperty("UseVulnBomb"));
+            this.InvokeDeath = Boolean.parseBoolean(this.configuration.getProperty("InvokeDeath"));
+            this.teleportToWarOnHealth = Boolean.parseBoolean(this.configuration.getProperty("teleportToWarOnHealth"));
+            this.TorstolIncence = Boolean.parseBoolean(this.configuration.getProperty("TorstolIncence"));
+            this.KwuarmIncence = Boolean.parseBoolean(this.configuration.getProperty("KwuarmIncence"));
+            this.LantadymeIncence = Boolean.parseBoolean(this.configuration.getProperty("LantadymeIncence"));
+            this.usePenance = Boolean.parseBoolean(this.configuration.getProperty("usePenance"));
+            this.useProtection = Boolean.parseBoolean(this.configuration.getProperty("useProtection"));
+            this.useLightForm = Boolean.parseBoolean(this.configuration.getProperty("useLightForm"));
+            this.useCrystalMask = Boolean.parseBoolean(this.configuration.getProperty("useCrystalMask"));
+            this.useSuperheatForm = Boolean.parseBoolean(this.configuration.getProperty("useSuperheatForm"));
+            this.useNecromancyPotion = Boolean.parseBoolean(this.configuration.getProperty("useNecromancyPotion"));
+            this.useAntifire = Boolean.parseBoolean(this.configuration.getProperty("useAntifire"));
+            this.useExcalibur = Boolean.parseBoolean(this.configuration.getProperty("useExcalibur"));
+            this.UseScriptureOfWen = Boolean.parseBoolean(this.configuration.getProperty("UseScriptureOfWen"));
+            this.UseScriptureOfJas = Boolean.parseBoolean(this.configuration.getProperty("UseScriptureOfJas"));
+            this.UseScriptureOfFul = Boolean.parseBoolean(this.configuration.getProperty("UseScriptureOfFul"));
+            this.useWeaponPoison = Boolean.parseBoolean(this.configuration.getProperty("useWeaponPoison"));
+            this.useAncientElven = Boolean.parseBoolean(this.configuration.getProperty("useAncientElven"));
+            this.healthThreshold = Integer.parseInt(this.configuration.getProperty("healthThreshold"));
+            this.prayerPointsThreshold = Integer.parseInt(this.configuration.getProperty("prayerPointsThreshold"));
 
+            println("Configuration loaded successfully.");
+        } catch (Exception e) {
+            println("Failed to load configuration. Using defaults.");
+        }
+    }
+    }

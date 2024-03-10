@@ -119,7 +119,7 @@ public class SkeletonScriptGraphicsContext extends ScriptGraphicsContext {
     private String healthFeedbackMessage = "";
     private String prayerFeedbackMessage = "";
     private String logoutFeedbackMessage = "";
-    private String prayerPointsThresholdStr = "1000";
+    private String prayerPointsThresholdStr = "5000";
     private String healthThresholdStr = "50";
     private static float RGBToFloat(int rgbValue) {
         return rgbValue / 255.0f;
@@ -266,6 +266,8 @@ public class SkeletonScriptGraphicsContext extends ScriptGraphicsContext {
                     script.usedarkness = ImGui.Checkbox("Use Darkness", script.usedarkness);
                     script.quickprayer = ImGui.Checkbox("Use Quick Prayer 1 in Combat", script.quickprayer);
                     script.useExcalibur = ImGui.Checkbox("Use Excalibur", script.useExcalibur);
+                    script.useAncientElven = ImGui.Checkbox("Use Ancient Elven Ritual Shard", script.useAncientElven);
+                    script.useWeaponPoison = ImGui.Checkbox("Use Weapon Poison", script.useWeaponPoison);
                    // script.UseDeathGrasp = ImGui.Checkbox("Use Death's Grasp in EOF", script.UseDeathGrasp);
                     ImGui.SeparatorText("Teleport Options");
                     script.teleportToWarOnHealth = ImGui.Checkbox("Teleport to War's Retreat on Low Health", script.teleportToWarOnHealth);
