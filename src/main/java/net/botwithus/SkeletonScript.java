@@ -238,7 +238,7 @@ public class SkeletonScript extends LoopingScript {
         }
         super.initialize();
         this.isBackgroundScript = true;
-        this.loopDelay = RandomGenerator.nextInt(1000, 1200);
+        this.loopDelay = RandomGenerator.nextInt(5000, 6000);
         this.sgc = new SkeletonScriptGraphicsContext(getConsole(), this);
         this.runStartTime = System.currentTimeMillis();
         loadConfiguration();
@@ -749,23 +749,17 @@ public class SkeletonScript extends LoopingScript {
     }
 
     private void Deathmark() {
-        if (getLocalPlayer() == null) {
-            return;
-        }
-        if (InvokeDeath && getLocalPlayer().hasTarget()) {
+        if (InvokeDeath) {
 
-            ComponentQuery query = ComponentQuery.newQuery(1490).spriteId(30100);
-            if (query.results().isEmpty()) {
-                Execution.delay(RandomGenerator.nextInt(1000, 2000));
-                ActionBar.useAbility("Invoke Death");
-                println("Used Invoke Death");
-                Execution.delayUntil(RandomGenerator.nextInt(60000, 120000), () -> getLocalPlayer().getTarget().getCurrentHealth() == 0);
-                println("Target is dead, invoke death successful");
-                Execution.delay(RandomGenerator.nextInt(1000, 2000));
+            if (Interfaces.isOpen(1490)) {
+                ComponentQuery query = ComponentQuery.newQuery(1490).spriteId(30100);
+                if (query.results().isEmpty()) {
+                    ActionBar.useAbility("Invoke Death");
+                    println("Used Invoke Death");
+                }
             }
         }
     }
-
 
     private void UseSaraBrew() {
         if (useSaraBrew) {
