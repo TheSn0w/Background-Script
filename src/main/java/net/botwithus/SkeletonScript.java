@@ -27,9 +27,11 @@ import net.botwithus.rs3.script.LoopingScript;
 import net.botwithus.rs3.script.ScriptConsole;
 import net.botwithus.rs3.script.config.ScriptConfig;
 import net.botwithus.rs3.util.RandomGenerator;
+import net.botwithus.rs3.util.Regex;
 
 import java.time.Duration;
 import java.time.Instant;
+import java.util.regex.Pattern;
 
 import static net.botwithus.rs3.game.Client.getLocalPlayer;
 import static net.botwithus.rs3.game.scene.entities.characters.player.LocalPlayer.LOCAL_PLAYER;
@@ -397,24 +399,28 @@ public class SkeletonScript extends LoopingScript {
     }
 
 
-    public void drinkOverloads() {
-        Player localPlayer = Client.getLocalPlayer();
-        if (localPlayer != null && !localPlayer.isMoving()) {
-            if (VarManager.getVarbitValue(26037) == 0) {
-                if (localPlayer.getAnimationId() == 18000) {
-                    return;
-                }
+    Pattern overloads = Pattern.compile(Regex.getPatternForContainsString("overload").pattern(), Pattern.CASE_INSENSITIVE);
 
-                ResultSet<Item> overload = InventoryItemQuery.newQuery()
-                        .name("overload", String::contains)
-                        .results();
-                if (!overload.isEmpty()) {
-                    Item overloadItem = overload.first();
-                    assert overloadItem != null;
-                    Backpack.interact(overloadItem.getName(), "Drink");
-                    println("Drinking overload " + overloadItem.getName() + " ID: " + overloadItem.getId());
-                    Execution.delay(RandomGenerator.nextInt(10, 20));
+    public void drinkOverloads() {
+        if (getLocalPlayer() != null && VarManager.getVarbitValue(26037) == 0) {
+            ResultSet<Item> items = InventoryItemQuery.newQuery().results();
+
+            Item overloadPot = items.stream()
+                    .filter(item -> item.getName() != null && overloads.matcher(item.getName()).find())
+                    .findFirst()
+                    .orElse(null);
+
+            if (overloadPot != null) {
+                println("Drinking " + overloadPot.getName());
+                boolean success = Backpack.interact(overloadPot.getName(), "Drink");
+
+                if (success) {
+                    Execution.delay(RandomGenerator.nextInt(1180, 1220));
+                } else {
+                    println("Failed to use " + overloadPot.getName());
                 }
+            } else {
+                println("No Overload pots found.");
             }
         }
     }
@@ -750,12 +756,12 @@ public class SkeletonScript extends LoopingScript {
 
     private void Deathmark() {
         if (InvokeDeath) {
+            if (getLocalPlayer() != null) {
 
-            if (Interfaces.isOpen(1490)) {
-                ComponentQuery query = ComponentQuery.newQuery(1490).spriteId(30100);
-                if (query.results().isEmpty()) {
+                if (VarManager.getVarbitValue(53247) == 0 && !NpcQuery.newQuery().results().isEmpty() && getLocalPlayer().inCombat()) {
                     ActionBar.useAbility("Invoke Death");
                     println("Used Invoke Death");
+                    Execution.delayUntil(RandomGenerator.nextInt(360000, 400000), () -> VarManager.getVarbitValue(53247) == 0);
                 }
             }
         }
