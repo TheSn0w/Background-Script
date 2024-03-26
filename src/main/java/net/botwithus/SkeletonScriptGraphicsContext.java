@@ -12,7 +12,9 @@ import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 
 public class SkeletonScriptGraphicsContext extends ScriptGraphicsContext {
     private SkeletonScript script;
@@ -124,6 +126,9 @@ public class SkeletonScriptGraphicsContext extends ScriptGraphicsContext {
     private static float RGBToFloat(int rgbValue) {
         return rgbValue / 255.0f;
     }
+    private List<String> targetItemNames = new ArrayList<>();
+    private String selectedItem = "";
+    private String saveSettingsFeedbackMessage = "";
 
     public SkeletonScriptGraphicsContext(ScriptConsole scriptConsole, SkeletonScript script) {
         super(scriptConsole);
@@ -164,19 +169,21 @@ public class SkeletonScriptGraphicsContext extends ScriptGraphicsContext {
 
     @Override
     public void drawSettings() {
-        ImGui.PushStyleColor(21, RGBToFloat(47), RGBToFloat(79), RGBToFloat(79), 1.0f); // Button color
-        ImGui.PushStyleColor(18, RGBToFloat(255), RGBToFloat(255), RGBToFloat(255), 1.0f); // Checkbox Tick color
-        ImGui.PushStyleColor(5, RGBToFloat(47), RGBToFloat(79), RGBToFloat(79), 1.0f); // Border Colour
+        ImGui.PushStyleColor(0, RGBToFloat(173), RGBToFloat(216), RGBToFloat(230), 1.0f); // Button color
+        ImGui.PushStyleColor(21, RGBToFloat(47), RGBToFloat(79), RGBToFloat(79), 0.5f); // Button color
+        ImGui.PushStyleColor(18, RGBToFloat(173), RGBToFloat(216), RGBToFloat(230), 0.5f); // Checkbox Tick color
+        ImGui.PushStyleColor(5, RGBToFloat(47), RGBToFloat(79), RGBToFloat(79), 0.5f); // Border Colour
         ImGui.PushStyleColor(2, RGBToFloat(0), RGBToFloat(0), RGBToFloat(0), 0.9f); // Background color
-        ImGui.PushStyleColor(7, RGBToFloat(47), RGBToFloat(79), RGBToFloat(79), 1.0f); // Checkbox Background color
-        ImGui.PushStyleColor(11, RGBToFloat(47), RGBToFloat(79), RGBToFloat(79), 1.0f); // Header Colour
-        ImGui.PushStyleColor(22, RGBToFloat(64), RGBToFloat(67), RGBToFloat(67), 1.0f); // Highlighted button color
-        ImGui.PushStyleColor(27, RGBToFloat(47), RGBToFloat(79), RGBToFloat(79), 1.0f); //ImGUI separator Colour
-        ImGui.PushStyleColor(30, RGBToFloat(47), RGBToFloat(79), RGBToFloat(79), 1.0f); //Corner Extender colour
-        ImGui.PushStyleColor(31, RGBToFloat(47), RGBToFloat(79), RGBToFloat(79), 1.0f); //Corner Extender colour
-        ImGui.PushStyleColor(32, RGBToFloat(47), RGBToFloat(79), RGBToFloat(79), 1.0f); //Corner Extender colour
-        ImGui.PushStyleColor(33, RGBToFloat(47), RGBToFloat(79), RGBToFloat(79), 1.0f); //Corner Extender colour
-        ImGui.PushStyleColor(34, RGBToFloat(47), RGBToFloat(79), RGBToFloat(79), 1.0f); //Corner Extender colour
+        ImGui.PushStyleColor(7, RGBToFloat(47), RGBToFloat(79), RGBToFloat(79), 0.5f); // Checkbox Background color
+        ImGui.PushStyleColor(11, RGBToFloat(47), RGBToFloat(79), RGBToFloat(79), 0.5f); // Header Colour
+        ImGui.PushStyleColor(22, RGBToFloat(173), RGBToFloat(216), RGBToFloat(230), 0.5f); // Highlighted button color
+        ImGui.PushStyleColor(13, RGBToFloat(255), RGBToFloat(255), RGBToFloat(255), 0.5f); // Highlighted button color
+        ImGui.PushStyleColor(27, RGBToFloat(47), RGBToFloat(79), RGBToFloat(79), 0.5f); //ImGUI separator Colour
+        ImGui.PushStyleColor(30, RGBToFloat(47), RGBToFloat(79), RGBToFloat(79), 0.5f); //Corner Extender colour
+        ImGui.PushStyleColor(31, RGBToFloat(47), RGBToFloat(79), RGBToFloat(79), 0.5f); //Corner Extender colour
+        ImGui.PushStyleColor(32, RGBToFloat(47), RGBToFloat(79), RGBToFloat(79), 0.5f); //Corner Extender colour
+        ImGui.PushStyleColor(33, RGBToFloat(47), RGBToFloat(79), RGBToFloat(79), 0.5f); //Corner Extender colour
+        ImGui.PushStyleColor(3, RGBToFloat(47), RGBToFloat(79), RGBToFloat(79), 0.5f); //ChildBackground
 
 
         ImGui.SetWindowSize(200.f, 200.f);
@@ -184,7 +191,7 @@ public class SkeletonScriptGraphicsContext extends ScriptGraphicsContext {
             ImGui.PushStyleVar(1, 10.f, 5f);
             ImGui.PushStyleVar(2, 10.f, 5f); //spacing between side of window and checkbox
             ImGui.PushStyleVar(3, 10.f, 5f);
-            ImGui.PushStyleVar(4, 10.f, 5f);
+            ImGui.PushStyleVar(4, 10.f, 10f);
             ImGui.PushStyleVar(5, 10.f, 5f);
             ImGui.PushStyleVar(6, 10.f, 5f);
             ImGui.PushStyleVar(7, 10.f, 5f);
@@ -196,6 +203,8 @@ public class SkeletonScriptGraphicsContext extends ScriptGraphicsContext {
             ImGui.PushStyleVar(13, 10.f, 5f);
             ImGui.PushStyleVar(14, 10.f, 5f); // spaces between options ontop such as overlays, debug etc
             ImGui.PushStyleVar(15, 10.f, 5f); // spacing between Text/tabs and checkboxes
+            ImGui.PushStyleVar(16, 10.f, 5f);
+            ImGui.PushStyleVar(17, 10.f, 5f);
             if (ImGui.BeginTabBar("Options", ImGuiWindowFlag.None.getValue())) {
                 if (ImGui.BeginTabItem("Item Toggles", ImGuiWindowFlag.None.getValue())) {
                     if (isScriptRunning) {
@@ -209,12 +218,38 @@ public class SkeletonScriptGraphicsContext extends ScriptGraphicsContext {
                             isScriptRunning = true;
                         }
                     }
+                    ImGui.SameLine();
+                    if (ImGui.Button("Save Settings")) {
+                        try {
+                            script.saveConfiguration();
+                            saveSettingsFeedbackMessage = "Settings saved successfully.";
+                        } catch (Exception e) {
+                            saveSettingsFeedbackMessage = "Failed to save settings: " + e.getMessage();
+                        }
+                    }
+
+                    if (!saveSettingsFeedbackMessage.isEmpty()) {
+                        ImGui.Text(saveSettingsFeedbackMessage);
+                    }
+
                     ImGui.SeparatorText("Food/Prayer Options");
                     script.useSaraBrew = ImGui.Checkbox("Drink Saradomin Brew", script.useSaraBrew);
+                    if (ImGui.IsItemHovered()) {
+                        ImGui.SetTooltip("Have in Backpack.");
+                    }
                     script.useSaraBrewandBlubber = ImGui.Checkbox("Drink Saradomin Brew and Blubber", script.useSaraBrewandBlubber);
+                    if (ImGui.IsItemHovered()) {
+                        ImGui.SetTooltip("Have in Backpack.");
+                    }
                     script.eatFood = ImGui.Checkbox("Eat Food", script.eatFood);
+                    if (ImGui.IsItemHovered()) {
+                        ImGui.SetTooltip("Have in Backpack.");
+                    }
                     ImGui.SetItemWidth(40);
                     healthThresholdStr = ImGui.InputText("Health Threshold (%)", healthThresholdStr);
+                    if (ImGui.IsItemHovered()) {
+                        ImGui.SetTooltip("Health % to eat at.");
+                    }
                     ImGui.SameLine();
                     if (ImGui.Button("Set Health Threshold")) {
                         try {
@@ -235,6 +270,9 @@ public class SkeletonScriptGraphicsContext extends ScriptGraphicsContext {
                     script.useprayer = ImGui.Checkbox("Use Prayer/Restore Pots/Flasks", script.useprayer);
                     ImGui.SetItemWidth(60);
                     prayerPointsThresholdStr = ImGui.InputText("Prayer Points Threshold", prayerPointsThresholdStr);
+                    if (ImGui.IsItemHovered()) {
+                        ImGui.SetTooltip("Prayer points to drink at. `5000 = 500`");
+                    }
                     ImGui.SameLine();
 
                     if (ImGui.Button("Set Prayer Threshold")) {
@@ -253,52 +291,92 @@ public class SkeletonScriptGraphicsContext extends ScriptGraphicsContext {
                     if (!prayerFeedbackMessage.isEmpty()) {
                         ImGui.Text(prayerFeedbackMessage);
                     }
-                    ImGui.SeparatorText("Combat Options");
-                    ImGui.PushStyleColor(0, RGBToFloat(134), RGBToFloat(136), RGBToFloat(138), 1.0f); //text colour
-                    ImGui.Text("Have on action bar");
-                    ImGui.PopStyleColor(1);
-                    script.UseSoulSplit = ImGui.Checkbox("Use Soul Split in Combat", script.UseSoulSplit);
+                    ImGui.SeparatorText("Offensive Options");
+
+                    script.useEssenceOfFinality = ImGui.Checkbox("Use Essence of Finality", script.useEssenceOfFinality);
+                    if (ImGui.IsItemHovered()) {
+                        ImGui.SetTooltip("Do not have Finger of Death in Revo bar.");
+                    }
+                    ImGui.SetItemWidth(110.0F);
+                    ImGui.SameLine();
+                    SkeletonScript.NecrosisStacksThreshold = ImGui.InputInt("Necrosis Stacks Threshold (0-12)", SkeletonScript.NecrosisStacksThreshold);
+                    if (ImGui.IsItemHovered()) {
+                        ImGui.SetTooltip("Stacks to cast at.");
+                    }
+                    if (SkeletonScript.NecrosisStacksThreshold < 0) {
+                        SkeletonScript.NecrosisStacksThreshold = 0;
+                    } else if (SkeletonScript.NecrosisStacksThreshold > 12) {
+                        SkeletonScript.NecrosisStacksThreshold = 12;
+                    }
+                    script.useVolleyofSouls = ImGui.Checkbox("Use Volley of Souls", script.useVolleyofSouls);
+                    if (ImGui.IsItemHovered()) {
+                        ImGui.SetTooltip("Do not have Volley on Revo bar.");
+                    }
+                    ImGui.SetItemWidth(110.0F);
+                    ImGui.SameLine();
+// Display and allow the user to modify the VolleyOfSoulsThreshold
+                    SkeletonScript.VolleyOfSoulsThreshold = ImGui.InputInt("Volley of Souls Threshold (0-5)", SkeletonScript.VolleyOfSoulsThreshold);
+                    if (ImGui.IsItemHovered()) {
+                        ImGui.SetTooltip("Stacks to cast at.");
+                    }
+                    if (SkeletonScript.VolleyOfSoulsThreshold < 0) {
+                        SkeletonScript.VolleyOfSoulsThreshold = 0; // Ensure threshold does not go below 0
+                    } else if (SkeletonScript.VolleyOfSoulsThreshold > 5) {
+                        SkeletonScript.VolleyOfSoulsThreshold = 5; // Ensure threshold does not exceed 5
+                    }
+
                     script.UseVulnBomb = ImGui.Checkbox("Use Vulnerability Bomb", script.UseVulnBomb);
+                    if (ImGui.IsItemHovered()) {
+                        ImGui.SetTooltip("Have on Action Bar.");
+                    }
                     script.UseSmokeBomb = ImGui.Checkbox("Use Smoke Cloud", script.UseSmokeBomb);
+                    if (ImGui.IsItemHovered()) {
+                        ImGui.SetTooltip("Have on Action Bar.");
+                    }
                     script.InvokeDeath = ImGui.Checkbox("Use Invoke Death", script.InvokeDeath);
+                    if (ImGui.IsItemHovered()) {
+                        ImGui.SetTooltip("Have on Action Bar.");
+                    }
+                    ImGui.SeparatorText("Defensive Options");
                     script.useoverload = ImGui.Checkbox("Use Overloads", script.useoverload);
-                    script.useaggression = ImGui.Checkbox("Use Aggression Flask", script.useaggression);
+                    if (ImGui.IsItemHovered()) {
+                        ImGui.SetTooltip("Have in Backpack.");
+                    }
                     script.usedarkness = ImGui.Checkbox("Use Darkness", script.usedarkness);
+                    if (ImGui.IsItemHovered()) {
+                        ImGui.SetTooltip("Have on Action Bar.");
+                    }
+                    script.UseSoulSplit = ImGui.Checkbox("Use Soul Split in Combat", script.UseSoulSplit);
+                    if (ImGui.IsItemHovered()) {
+                        ImGui.SetTooltip("Have on Action Bar.");
+                    }
                     script.quickprayer = ImGui.Checkbox("Use Quick Prayer 1 in Combat", script.quickprayer);
+                    if (ImGui.IsItemHovered()) {
+                        ImGui.SetTooltip("Have on Action Bar.");
+                    }
                     script.useExcalibur = ImGui.Checkbox("Use Excalibur", script.useExcalibur);
+                    if (ImGui.IsItemHovered()) {
+                        ImGui.SetTooltip("Have in Backpack.");
+                    }
                     script.useAncientElven = ImGui.Checkbox("Use Ancient Elven Ritual Shard", script.useAncientElven);
+                    if (ImGui.IsItemHovered()) {
+                        ImGui.SetTooltip("Have in Backpack.");
+                    }
                     script.useWeaponPoison = ImGui.Checkbox("Use Weapon Poison", script.useWeaponPoison);
-                   // script.UseDeathGrasp = ImGui.Checkbox("Use Death's Grasp in EOF", script.UseDeathGrasp);
+                    if (ImGui.IsItemHovered()) {
+                        ImGui.SetTooltip("Have in Backpack.");
+                    }
                     ImGui.SeparatorText("Teleport Options");
                     script.teleportToWarOnHealth = ImGui.Checkbox("Teleport to War's Retreat on Low Health", script.teleportToWarOnHealth);
-                    ImGui.PushStyleColor(0, RGBToFloat(134), RGBToFloat(136), RGBToFloat(138), 1.0f); //text colour
-                    ImGui.Text("Will teleport to War's Retreat if health falls below Threshold");
-                    ImGui.PopStyleColor(1);
-                    ImGui.SeparatorText("Miscellaneous Options");
-                    script.KwuarmIncence = ImGui.Checkbox("Use Kwuarm Incense Sticks", script.KwuarmIncence);
-                    if (script.KwuarmIncence) {
-                        ImGui.SameLine();
-                        script.overloadEnabled = ImGui.Checkbox("Overload?", script.overloadEnabled);
+                    if (ImGui.IsItemHovered()) {
+                        ImGui.SetTooltip("Will teleport to War's Retreat if health falls below Threshold.");
                     }
-
-// For Torstol Incense
-                    script.TorstolIncence = ImGui.Checkbox("Use Torstol Incense Sticks", script.TorstolIncence);
-                    if (script.TorstolIncence) {
-                        ImGui.SameLine();
-                        script.overloadEnabled = ImGui.Checkbox("Overload?", script.overloadEnabled);
-                    }
-
-// For Lantadyme Incense
-                    script.LantadymeIncence = ImGui.Checkbox("Use Lantadyme Incense Sticks", script.LantadymeIncence);
-                    if (script.LantadymeIncence) {
-                        ImGui.SameLine();
-                        script.overloadEnabled = ImGui.Checkbox("Overload?", script.overloadEnabled);
-                    }
-                    script.usePenance = ImGui.Checkbox("Use Powder of Penance", script.usePenance);
-                    script.useProtection = ImGui.Checkbox("Use Powder of Protection", script.useProtection);
-                    script.useAntifire = ImGui.Checkbox("Use Antifire variant", script.useAntifire);
+                    ImGui.SeparatorText("Scriptures");
                     boolean tempUseScriptureOfWen = script.UseScriptureOfWen;
                     if (ImGui.Checkbox("Use Scripture of Wen in Combat", tempUseScriptureOfWen)) {
+                        if (ImGui.IsItemHovered()) {
+                            ImGui.SetTooltip("in Combat only.");
+                        }
                         script.UseScriptureOfWen = true;
                         script.UseScriptureOfJas = false;
                         script.UseScriptureOfFul = false;
@@ -309,6 +387,9 @@ public class SkeletonScriptGraphicsContext extends ScriptGraphicsContext {
 // Use Scripture of Jas
                     boolean tempUseScriptureOfJas = script.UseScriptureOfJas;
                     if (ImGui.Checkbox("Use Scripture of Jas in Combat", tempUseScriptureOfJas)) {
+                        if (ImGui.IsItemHovered()) {
+                            ImGui.SetTooltip("in Combat only.");
+                        }
                         script.UseScriptureOfWen = false;
                         script.UseScriptureOfJas = true;
                         script.UseScriptureOfFul = false;
@@ -319,11 +400,58 @@ public class SkeletonScriptGraphicsContext extends ScriptGraphicsContext {
 // Use Scripture of Ful
                     boolean tempUseScriptureOfFul = script.UseScriptureOfFul;
                     if (ImGui.Checkbox("Use Scripture of Ful in Combat", tempUseScriptureOfFul)) {
+                        if (ImGui.IsItemHovered()) {
+                            ImGui.SetTooltip("in Combat only.");
+                        }
                         script.UseScriptureOfWen = false;
                         script.UseScriptureOfJas = false;
                         script.UseScriptureOfFul = true;
                     } else if (script.UseScriptureOfFul) {
                         script.UseScriptureOfFul = false;
+                    }
+                    ImGui.SeparatorText("Loot Options");
+                    script.useLoot = ImGui.Checkbox("Use Loot", script.useLoot);
+                    if (ImGui.IsItemHovered()) {
+                        ImGui.SetTooltip("All options in area loot must be turned off, will pick up items under a loot beam automatically without being on list.");
+                    }
+                    ImGui.SeparatorText("Items to Pickup");
+
+                    this.selectedItem = ImGui.InputText("Item name", this.selectedItem);
+
+                    if (ImGui.Button("Add Item") && !this.selectedItem.isEmpty()) {
+                        if (!this.script.getTargetItemNames().contains(this.selectedItem)) {
+                            this.script.println("Adding \"" + this.selectedItem + "\" to target items.");
+                            this.script.addItemName(this.selectedItem);
+                            this.selectedItem = "";
+                        }
+                    }
+                    if (ImGui.IsItemHovered()) {
+                        ImGui.SetTooltip("Can be part of the name, case insensitive. e.g. `char` will match all charms.");
+                    }
+
+
+
+                    if (!this.script.getTargetItemNames().isEmpty()) {
+                        if (ImGui.BeginChild("Items List", 0, 100, true, 0)) {
+                            boolean firstItem = true;
+                            for (String itemName : new ArrayList<>(this.script.getTargetItemNames())) {
+                                if (!firstItem) {
+                                    ImGui.SameLine();
+                                }
+                                firstItem = false;
+
+                                if (ImGui.Button(itemName)) {
+                                    this.script.println("Removing \"" + itemName + "\" from target items.");
+                                    this.script.removeItemName(itemName);
+                                    break;
+                                }
+
+                                if (ImGui.IsItemHovered()) {
+                                    ImGui.SetTooltip("Click to remove");
+                                }
+                            }
+                        }
+                        ImGui.EndChild();
                     }
 
 
@@ -379,7 +507,7 @@ public class SkeletonScriptGraphicsContext extends ScriptGraphicsContext {
 
                     ImGui.EndTabItem();
                 }
-                if (ImGui.BeginTabItem("Skilling Options", ImGuiWindowFlag.None.getValue())) {
+                if (ImGui.BeginTabItem("Misc Options", ImGuiWindowFlag.None.getValue())) {
                     ImGui.SeparatorText("Skilling Potions");
 
                     script.useLightForm = ImGui.Checkbox("Use Light Form", script.useLightForm);
@@ -414,6 +542,29 @@ public class SkeletonScriptGraphicsContext extends ScriptGraphicsContext {
                     script.useMagicDummy = ImGui.Checkbox("Use Magic Dummy", script.useMagicDummy);
                     script.useAgilityDummy = ImGui.Checkbox("Use Agility Dummy", script.useAgilityDummy);
                     script.useThievingDummy = ImGui.Checkbox("Use Thieving Dummy", script.useThievingDummy);
+                    script.KwuarmIncence = ImGui.Checkbox("Use Kwuarm Incense Sticks", script.KwuarmIncence);
+                    if (script.KwuarmIncence) {
+                        ImGui.SameLine();
+                        script.overloadEnabled = ImGui.Checkbox("Overload?", script.overloadEnabled);
+                    }
+
+// For Torstol Incense
+                    script.TorstolIncence = ImGui.Checkbox("Use Torstol Incense Sticks", script.TorstolIncence);
+                    if (script.TorstolIncence) {
+                        ImGui.SameLine();
+                        script.overloadEnabled = ImGui.Checkbox("Overload?", script.overloadEnabled);
+                    }
+
+// For Lantadyme Incense
+                    script.LantadymeIncence = ImGui.Checkbox("Use Lantadyme Incense Sticks", script.LantadymeIncence);
+                    if (script.LantadymeIncence) {
+                        ImGui.SameLine();
+                        script.overloadEnabled = ImGui.Checkbox("Overload?", script.overloadEnabled);
+                    }
+                    script.usePenance = ImGui.Checkbox("Use Powder of Penance", script.usePenance);
+                    script.useProtection = ImGui.Checkbox("Use Powder of Protection", script.useProtection);
+                    script.useAntifire = ImGui.Checkbox("Use Antifire variant", script.useAntifire);
+                    script.useaggression = ImGui.Checkbox("Use Aggression Flask", script.useaggression);
                     ImGui.EndTabItem();
                 }
 

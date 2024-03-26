@@ -2,6 +2,7 @@ package net.botwithus;
 
 import net.botwithus.api.game.hud.inventories.Backpack;
 import net.botwithus.api.game.hud.inventories.Equipment;
+import net.botwithus.rs3.game.js5.types.vars.VarDomainType;
 import net.botwithus.rs3.game.minimenu.MiniMenu;
 import net.botwithus.internal.scripts.ScriptDefinition;
 import net.botwithus.rs3.game.Client;
@@ -12,14 +13,18 @@ import net.botwithus.rs3.game.hud.interfaces.Component;
 import net.botwithus.rs3.game.hud.interfaces.Interfaces;
 import net.botwithus.rs3.game.js5.types.ItemType;
 import net.botwithus.rs3.game.minimenu.actions.ComponentAction;
+import net.botwithus.rs3.game.queries.builders.animations.SpotAnimationQuery;
 import net.botwithus.rs3.game.queries.builders.characters.NpcQuery;
 import net.botwithus.rs3.game.queries.builders.components.ComponentQuery;
+import net.botwithus.rs3.game.queries.builders.items.GroundItemQuery;
 import net.botwithus.rs3.game.queries.builders.items.InventoryItemQuery;
 import net.botwithus.rs3.game.queries.results.EntityResultSet;
 import net.botwithus.rs3.game.queries.results.ResultSet;
+import net.botwithus.rs3.game.scene.entities.animation.SpotAnimation;
 import net.botwithus.rs3.game.scene.entities.characters.npc.Npc;
 import net.botwithus.rs3.game.scene.entities.characters.player.LocalPlayer;
 import net.botwithus.rs3.game.scene.entities.characters.player.Player;
+import net.botwithus.rs3.game.scene.entities.item.GroundItem;
 import net.botwithus.rs3.game.skills.Skills;
 import net.botwithus.rs3.game.vars.VarManager;
 import net.botwithus.rs3.script.Execution;
@@ -31,6 +36,9 @@ import net.botwithus.rs3.util.Regex;
 
 import java.time.Duration;
 import java.time.Instant;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import static net.botwithus.rs3.game.Client.getLocalPlayer;
@@ -52,6 +60,7 @@ public class SkeletonScript extends LoopingScript {
     boolean useCrystalMask;
     boolean useAncientElven;
     boolean useWeaponPoison;
+    boolean useEssenceOfFinality;
 
 
     boolean usePenance;
@@ -64,6 +73,7 @@ public class SkeletonScript extends LoopingScript {
     boolean useMagicDummy;
     boolean useRangedDummy;
     boolean useMeleeDummy;
+    boolean useLoot;
     private boolean scriptRunning = false;
     long runStartTime;
     private int prayerPointsThreshold = 5000;
@@ -72,6 +82,7 @@ public class SkeletonScript extends LoopingScript {
     boolean teleportToWarOnHealth;
     boolean useSaraBrew;
     boolean useSaraBrewandBlubber;
+    boolean useVolleyofSouls;
     boolean useoverload;
     boolean useprayer;
     boolean usedarkness;
@@ -234,16 +245,16 @@ public class SkeletonScript extends LoopingScript {
 
     public SkeletonScript(String s, ScriptConfig scriptConfig, ScriptDefinition scriptDefinition) {
         super(s, scriptConfig, scriptDefinition);
+        loadConfiguration();
         this.sgc = new SkeletonScriptGraphicsContext(getConsole(), this);
         if (Client.getGameState() == Client.GameState.LOGGED_IN) {
             setupStartingSkillLevels();
         }
         super.initialize();
         this.isBackgroundScript = true;
-        this.loopDelay = RandomGenerator.nextInt(5000, 6000);
+        this.loopDelay = RandomGenerator.nextInt(1200, 1800);
         this.sgc = new SkeletonScriptGraphicsContext(getConsole(), this);
         this.runStartTime = System.currentTimeMillis();
-        loadConfiguration();
     }
 
     public void startScript() {
@@ -275,87 +286,263 @@ public class SkeletonScript extends LoopingScript {
         if (getLocalPlayer() != null && Client.getGameState() == Client.GameState.LOGGED_IN && !scriptRunning) {
             return;
         }
-        saveConfiguration();
+        if (useVolleyofSouls)
+            volleyOfSouls();
+
+        if (useLoot)
+            loot();
+
         if (Logout)
             checkAndPerformLogout();
+
         if (useprayer)
             usePrayerOrRestorePots();
+
         if (useoverload)
             drinkOverloads();
+
         if (UseSoulSplit)
             manageSoulSplit();
+
         if (useaggression)
             useAggression();
+
         if (usecooking)
             useCooking();
+
         if (usedivination)
             useDivination();
+
         if (useHunter)
             useHunter();
+
         if (usedarkness)
             useDarkness();
+
         if (quickprayer)
             manageQuickPrayers();
+
         if (eatFood)
             eatFood();
+
         if (UseSmokeBomb)
             UseSmokeCloud();
+
         if (UseVulnBomb)
             useVulnBomb();
+
         if (InvokeDeath)
             Deathmark();
+
         if (useSaraBrew)
             UseSaraBrew();
+
         if (useSaraBrewandBlubber)
             UseSaraandBlubber();
+
         if (teleportToWarOnHealth)
             TeleportToWarOnHealth();
+
         if (useThievingDummy)
             UseThievingDummy();
+
         if (useAgilityDummy)
             UseAgilityDummy();
+
         if (useMagicDummy)
             UseMagicDummy();
+
         if (useRangedDummy)
             UseRangedDummy();
+
         if (useMeleeDummy)
             UseMeleeDummy();
+
         if (KwuarmIncence)
             KwuarmincenceSticks();
+
         if (TorstolIncence)
             TorstolIncenseSticks();
+
         if (LantadymeIncence)
             LantadymeIncenseSticks();
+
         if (usePenance)
             Penance();
+
         if (useProtection)
             Protection();
+
         if (useLightForm)
             LightFormActivation();
+
         if (!useLightForm)
             deactivateLightForm();
+
         if (useCrystalMask)
             CystalMask();
+
         if (useSuperheatForm)
             SuperheatFormActivation();
+
         if (!useSuperheatForm)
             deactivateSuperheatForm();
+
         if (useNecromancyPotion)
             NecromancyPotion();
+
         if (useAntifire)
             antifirePotion();
+
         if (useExcalibur)
             activateExcalibur();
+
         if (UseScriptureOfWen)
             manageScriptureOfWen();
+
         if (UseScriptureOfJas)
             manageScriptureOfJas();
+
         if (UseScriptureOfFul)
             manageScriptureOfFul();
+
         if (useWeaponPoison)
             useWeaponPoison();
+
         if (useAncientElven)
             manageAncientElven();
+
+        if (useEssenceOfFinality)
+            essenceOfFinality();
+    }
+
+    private List<String> targetItemNames = new ArrayList<>();
+
+    public void addItemName(String itemName) {
+        if (!targetItemNames.contains(itemName)) {
+            targetItemNames.add(itemName);
+        }
+    }
+
+    public void removeItemName(String itemName) {
+        targetItemNames.remove(itemName);
+    }
+
+    public List<String> getTargetItemNames() {
+        return new ArrayList<>(targetItemNames);
+    }
+
+    private void loot() {
+        if (getLocalPlayer() == null) {
+            return;
+        }
+
+        SpotAnimationQuery.newQuery().ids(4419).results().stream()
+                .findFirst()
+                .ifPresent(this::attemptToPickUpItemOnSpotAnimation);
+
+        collectAllTargetItems(targetItemNames);
+    }
+
+    private void collectAllTargetItems(List<String> targetKeywords) {
+        List<String> availableItems = getAvailableItems();
+        List<String> itemsToCollect = new ArrayList<>();
+
+        for (String item : availableItems) {
+            for (String keyword : targetKeywords) {
+                if (item.toLowerCase().contains(keyword)) {
+                    itemsToCollect.add(item);
+                    break;
+                }
+            }
+        }
+
+        collect(itemsToCollect);
+    }
+
+    private List<String> getAvailableItems() {
+        List<String> items = new ArrayList<>();
+        ResultSet<GroundItem> groundItems = GroundItemQuery.newQuery().results();
+
+        for (net.botwithus.rs3.game.scene.entities.item.GroundItem item : groundItems) {
+            items.add(item.getName());
+        }
+        return items;
+    }
+
+    private void collect(List<String> itemNames) {
+        Player localPlayer = Client.getLocalPlayer();
+        if (localPlayer != null && ((double) localPlayer.getCurrentHealth() / localPlayer.getMaximumHealth()) < 0.4) {
+            return;
+        } else if (Backpack.isFull()) {
+            manageFullBackpack();
+            collect(itemNames);
+            return;
+        }
+        ResultSet<GroundItem> groundItems = GroundItemQuery.newQuery().results();
+
+        boolean foundItem = false;
+        for (GroundItem groundItem : groundItems) {
+            if (itemNames.contains(groundItem.getName())) {
+                foundItem = true;
+                ScriptConsole.println("Attempting to pick up: " + groundItem.getName(), new Object[0]);
+                groundItem.interact("Take");
+                Execution.delayUntil(RandomGenerator.nextInt(5000, 8000), () -> GroundItemQuery.newQuery().name(groundItem.getName()).results().isEmpty());
+                ScriptConsole.println("Picked up: " + groundItem.getName(), new Object[0]);
+            }
+        }
+        if (foundItem) {
+            collect(itemNames);
+        }
+    }
+
+
+    private void attemptToPickUpGroundItem(GroundItem groundItem) {
+        if (Backpack.isFull()) {
+            manageFullBackpack();
+        } else if (!Backpack.isFull() && groundItem != null) {
+            println("Attempting to take ground item: " + groundItem.getName());
+            boolean interactionSuccess = groundItem.interact("Take");
+            Execution.delay(RandomGenerator.nextInt(500, 900));
+            if (interactionSuccess) {
+                Execution.delayUntil(RandomGenerator.nextInt(500, 1000), () -> GroundItemQuery.newQuery().name(groundItem.getName()).results().isEmpty());
+            }
+        }
+    }
+
+    private void manageFullBackpack() {
+        println("Backpack is full, attempting to eat food.");
+        ResultSet<Item> foodItems = InventoryItemQuery.newQuery().option("Eat").results();
+        if (!foodItems.isEmpty()) {
+            Item food = foodItems.first();
+            if (food != null) {
+                eatFood(food);
+            }
+        } else {
+            println("No food to eat, retreating.");
+        }
+    }
+
+    private void eatFood(Item food) {
+        println("Attempting to eat " + food.getName());
+        boolean success = Backpack.interact(food.getName(), 1);
+        if (success) {
+            println("Eating " + food.getName());
+            Execution.delayUntil(RandomGenerator.nextInt(500, 1000), () -> !Backpack.isFull());
+        } else {
+            println("Failed to eat " + food.getName());
+            Execution.delayUntil(RandomGenerator.nextInt(500, 1000), () -> !Backpack.isFull());
+        }
+    }
+
+    private void attemptToPickUpItemOnSpotAnimation(SpotAnimation spotAnimation) {
+        GroundItem groundItem = GroundItemQuery.newQuery()
+                .onTile(spotAnimation.getCoordinate())
+                .results()
+                .nearest();
+        if (groundItem != null) {
+            attemptToPickUpGroundItem(groundItem);
+        }
     }
 
     public void setPrayerPointsThreshold(int threshold) {
@@ -370,7 +557,6 @@ public class SkeletonScript extends LoopingScript {
         Player localPlayer = Client.getLocalPlayer();
         if (localPlayer != null) {
             int currentPrayerPoints = LocalPlayer.LOCAL_PLAYER.getPrayerPoints();
-            println("Current Prayer Points: " + currentPrayerPoints);
             if (currentPrayerPoints < prayerPointsThreshold) {
                 ResultSet<Item> items = InventoryItemQuery.newQuery(93).results();
 
@@ -392,8 +578,6 @@ public class SkeletonScript extends LoopingScript {
                 } else {
                     println("No Prayer or Restore pots found.");
                 }
-            } else {
-                println("Current Prayer points are above " + prayerPointsThreshold + " No need to use Prayer or Restore pot.");
             }
         }
     }
@@ -403,6 +587,7 @@ public class SkeletonScript extends LoopingScript {
 
     public void drinkOverloads() {
         if (getLocalPlayer() != null && VarManager.getVarbitValue(26037) == 0) {
+
             ResultSet<Item> items = InventoryItemQuery.newQuery().results();
 
             Item overloadPot = items.stream()
@@ -412,15 +597,8 @@ public class SkeletonScript extends LoopingScript {
 
             if (overloadPot != null) {
                 println("Drinking " + overloadPot.getName());
-                boolean success = Backpack.interact(overloadPot.getName(), "Drink");
-
-                if (success) {
-                    Execution.delay(RandomGenerator.nextInt(1180, 1220));
-                } else {
-                    println("Failed to use " + overloadPot.getName());
-                }
-            } else {
-                println("No Overload pots found.");
+                Backpack.interact(overloadPot.getName(), "Drink");
+                Execution.delay(RandomGenerator.nextInt(1180, 1220));
             }
         }
     }
@@ -458,53 +636,24 @@ public class SkeletonScript extends LoopingScript {
         }
     }
 
-    private boolean soulSplitActive = false;
-
     public void manageSoulSplit() {
-        if (LOCAL_PLAYER.inCombat() && !soulSplitActive) {
-            updateSoulSplitActivation();
-        } else if (!LOCAL_PLAYER.inCombat() && soulSplitActive) {
-            updateSoulSplitActivation();
+        if (getLocalPlayer() != null) {
+        if (getLocalPlayer().inCombat()) {
+            ActivateSoulSplit();
+        } else
+            DeactivateSoulSplit();
         }
     }
 
-    private void updateSoulSplitActivation() {
-        int soulSplitEnabled = VarManager.getVarbitValue(16779);
-        boolean shouldBeActive = shouldActivateSoulSplit();
-
-        if (shouldBeActive && soulSplitEnabled != 1) {
-            activateSoulSplit();
-        } else if (!shouldBeActive && soulSplitEnabled == 1) {
-            deactivateSoulSplit();
+    private void ActivateSoulSplit() {
+        if (VarManager.getVarbitValue(16779) == 0) {
+            println("Activating Soul Split:  " + ActionBar.useAbility("Soul Split"));
         }
     }
-
-    private void activateSoulSplit() {
-        if (!soulSplitActive) {
-            println("Activating Soul Split.");
-            if (ActionBar.useAbility("Soul Split")) {
-                println("Soul Split activated successfully.");
-                soulSplitActive = true;
-            } else {
-                println("Failed to activate Soul Split.");
-            }
+    private void DeactivateSoulSplit() {
+        if (VarManager.getVarbitValue(16779) == 1) {
+            println("Deactivating Soul Split:  " + ActionBar.useAbility("Soul Split"));
         }
-    }
-
-    private void deactivateSoulSplit() {
-        if (soulSplitActive) {
-            println("Deactivating Soul Split.");
-            if (ActionBar.useAbility("Soul Split")) {
-                println("Soul Split deactivated.");
-                soulSplitActive = false;
-            } else {
-                println("Failed to deactivate Soul Split.");
-            }
-        }
-    }
-
-    private boolean shouldActivateSoulSplit() {
-        return LOCAL_PLAYER.inCombat() && (UseSoulSplit);
     }
 
     private boolean isCookingActive() {
@@ -646,9 +795,12 @@ public class SkeletonScript extends LoopingScript {
     private boolean quickPrayersActive = false;
 
     public void manageQuickPrayers() {
-        if (LOCAL_PLAYER.inCombat() && !quickPrayersActive) {
+        if (getLocalPlayer() == null) {
+            return;
+        }
+        if (getLocalPlayer().inCombat() && !quickPrayersActive) {
             updateQuickPrayersActivation();
-        } else if (!LOCAL_PLAYER.inCombat() && quickPrayersActive) {
+        } else if (!getLocalPlayer().inCombat() && quickPrayersActive) {
             updateQuickPrayersActivation();
         }
     }
@@ -689,7 +841,7 @@ public class SkeletonScript extends LoopingScript {
     }
 
     private boolean shouldActivateQuickPrayers() {
-        return LOCAL_PLAYER.inCombat();
+        return getLocalPlayer().inCombat();
     }
 
     public void eatFood() {
@@ -753,14 +905,34 @@ public class SkeletonScript extends LoopingScript {
             }
         }
     }
+    public static int NecrosisStacksThreshold = 12;
+
+    private void essenceOfFinality() {
+        if (getLocalPlayer().getAdrenaline() >= 300
+                && ComponentQuery.newQuery(291).spriteId(55524).results().isEmpty()
+                && ActionBar.getCooldownPrecise("Essence of Finality") == 0) {
+            if (VarManager.getVarValue(VarDomainType.PLAYER, 10986) >= NecrosisStacksThreshold) {
+                println("Used Death Grasp: " + ActionBar.useAbility("Essence of Finality"));
+                Execution.delayUntil(RandomGenerator.nextInt(1800, 2000), () -> ComponentQuery.newQuery(291).spriteId(55524).results().isEmpty());
+            }
+        }
+    }
+    int RisidualSouls = VarManager.getVarValue(VarDomainType.PLAYER, 11035);
+    public static int VolleyOfSoulsThreshold = 5;
+
+    private void volleyOfSouls() {
+        if (VarManager.getVarValue(VarDomainType.PLAYER, 11035) >= VolleyOfSoulsThreshold) {
+            println("Using Volley of Souls: " + ActionBar.useAbility("Volley of Souls"));
+            Execution.delayUntil(RandomGenerator.nextInt(1800, 2000), () -> RisidualSouls >= VolleyOfSoulsThreshold);
+        }
+    }
 
     private void Deathmark() {
         if (InvokeDeath) {
             if (getLocalPlayer() != null) {
 
-                if (VarManager.getVarbitValue(53247) == 0 && !NpcQuery.newQuery().results().isEmpty() && getLocalPlayer().inCombat()) {
-                    ActionBar.useAbility("Invoke Death");
-                    println("Used Invoke Death");
+                if (VarManager.getVarbitValue(53247) == 0 && getLocalPlayer().getFollowing() != null && getLocalPlayer().getFollowing().getCurrentHealth() >= 500 && ActionBar.getCooldownPrecise("Invoke Death") == 0) {
+                    println("Used Invoke: " + ActionBar.useAbility("Invoke Death"));
                     Execution.delayUntil(RandomGenerator.nextInt(360000, 400000), () -> VarManager.getVarbitValue(53247) == 0);
                 }
             }
@@ -833,7 +1005,7 @@ public class SkeletonScript extends LoopingScript {
                         LocalPlayer currentPlayer = Client.getLocalPlayer();
                         if (currentPlayer != null) {
                             double currentHealthPercentage = (double) currentPlayer.getCurrentHealth() / currentPlayer.getMaximumHealth() * 100;
-                            return currentHealthPercentage > 90;
+                            return currentHealthPercentage > healthThreshold;
                         }
                         return false;
                     });
@@ -1391,240 +1563,90 @@ public class SkeletonScript extends LoopingScript {
             }
         }
     }
-
-    private boolean scriptureOfWenActive = false;
-
-    public void manageScriptureOfWen() {
-        if (LOCAL_PLAYER.inCombat() && !scriptureOfWenActive) {
-            updateScriptureOfWenActivation();
-        } else if (!LOCAL_PLAYER.inCombat() && scriptureOfWenActive) {
-            updateScriptureOfWenActivation();
-        }
-    }
-
-    private void updateScriptureOfWenActivation() {
-        // Querying the component to check if Scripture of Wen is active
-        boolean isActive = isScriptureOfWenActive();
-
-        boolean shouldBeActive = shouldActivateScriptureOfWen();
-
-        if (shouldBeActive && !isActive) {
-            activateScriptureOfWen();
-        } else if (!shouldBeActive && isActive) {
-            deactivateScriptureOfWen();
-        }
-    }
-
-    private boolean isScriptureOfWenActive() {
-        // Using component query to check if Scripture of Wen is active
-        ComponentQuery query = ComponentQuery.newQuery(284).spriteId(52117);
-        ResultSet<Component> results = query.results();
-        // If the component with the specific sprite id exists, then Scripture of Wen is considered active
-        return !results.isEmpty();
-    }
-
-    private void activateScriptureOfWen() {
-        if (!scriptureOfWenActive) {
-            println("Activating Scripture of Wen.");
-            if (Equipment.interact(Equipment.Slot.POCKET, "Activate/Deactivate")) {
-                println("Scripture of Wen activated successfully.");
-                scriptureOfWenActive = true;
+    private void manageScriptureOfJas() {
+        if (getLocalPlayer() != null) {
+            if (getLocalPlayer().inCombat()) {
+                activateScriptureOfJas();
             } else {
-                println("Failed to activate Scripture of Wen.");
+                deactivateScriptureOfJas();
             }
+        }
+    }
+    private void activateScriptureOfJas() {
+        if (VarManager.getVarbitValue(30605) == 0 && VarManager.getVarbitValue(30604) >= 60) {
+            println("Activated Scripture of Jas:  " + Equipment.interact(Equipment.Slot.POCKET, "Activate/Deactivate"));
+        }
+    }
+
+
+    private void deactivateScriptureOfJas() {
+        if (VarManager.getVarbitValue(30605) == 1) {
+            println("Deactivated Scripture of Jas:  " + Equipment.interact(Equipment.Slot.POCKET, "Activate/Deactivate"));
+        }
+    }
+    private void manageScriptureOfWen() {
+        if (getLocalPlayer() != null) {
+            if (getLocalPlayer().inCombat()) {
+                activateScriptureOfWen();
+            } else {
+                deactivateScriptureOfWen();
+            }
+        }
+    }
+    private void activateScriptureOfWen() {
+        if (VarManager.getVarbitValue(30605) == 0 && VarManager.getVarbitValue(30604) >= 60) {
+            println("Activated Scripture of Wen:  " + Equipment.interact(Equipment.Slot.POCKET, "Activate/Deactivate"));
         }
     }
 
     private void deactivateScriptureOfWen() {
-        if (scriptureOfWenActive) {
-            println("Deactivating Scripture of Wen.");
-            if (Equipment.interact(Equipment.Slot.POCKET, "Activate/Deactivate")) {
-                println("Scripture of Wen deactivated.");
-                scriptureOfWenActive = false;
+        if (VarManager.getVarbitValue(30605) == 1) {
+            println("Deactivated Scripture of Wen:  " + Equipment.interact(Equipment.Slot.POCKET, "Activate/Deactivate"));
+        }
+    }
+
+    private void manageScriptureOfFul() {
+        if (getLocalPlayer() != null) {
+            if (getLocalPlayer().inCombat()) {
+                activateScriptureOfFul();
             } else {
-                println("Failed to deactivate Scripture of Wen.");
+                deactivateScriptureOfFul();
             }
         }
     }
-
-    private boolean shouldActivateScriptureOfWen() {
-        return LOCAL_PLAYER.inCombat() && (UseScriptureOfWen); // Assuming UseScriptureOfWen is a condition you define
-    }
-
-    private boolean scriptureOfJasActive = false;
-
-    public void manageScriptureOfJas() {
-        if (LOCAL_PLAYER.inCombat() && !scriptureOfJasActive) {
-            updateScriptureOfJasActivation();
-        } else if (!LOCAL_PLAYER.inCombat() && scriptureOfJasActive) {
-            updateScriptureOfJasActivation();
-        }
-    }
-
-    private void updateScriptureOfJasActivation() {
-        // Querying the component to check if Scripture of Jas is active
-        boolean isActive = isScriptureOfJasActive();
-
-        boolean shouldBeActive = shouldActivateScriptureOfJas();
-
-        if (shouldBeActive && !isActive) {
-            activateScriptureOfJas();
-        } else if (!shouldBeActive && isActive) {
-            deactivateScriptureOfJas();
-        }
-    }
-
-    private boolean isScriptureOfJasActive() {
-        // Using component query to check if Scripture of Jas is active
-        ComponentQuery query = ComponentQuery.newQuery(284).spriteId(51814);
-        ResultSet<Component> results = query.results();
-        // If the component with the specific sprite id exists, then Scripture of Jas is considered active
-        return !results.isEmpty();
-    }
-
-    private void activateScriptureOfJas() {
-        if (!scriptureOfJasActive) {
-            println("Activating Scripture of Jas.");
-            if (Equipment.interact(Equipment.Slot.POCKET, "Activate")) {
-                println("Scripture of Jas activated successfully.");
-                scriptureOfJasActive = true;
-            } else {
-                println("Failed to activate Scripture of Jas.");
-            }
-        }
-    }
-
-    private void deactivateScriptureOfJas() {
-        if (scriptureOfJasActive) {
-            println("Deactivating Scripture of Jas.");
-            if (Equipment.interact(Equipment.Slot.POCKET, "Deactivate")) {
-                println("Scripture of Jas deactivated.");
-                scriptureOfJasActive = false;
-            } else {
-                println("Failed to deactivate Scripture of Jas.");
-            }
-        }
-    }
-
-    private boolean shouldActivateScriptureOfJas() {
-        return LOCAL_PLAYER.inCombat() && (UseScriptureOfJas); // Assuming UseScriptureOfJas is a condition you define
-    }
-
-    private boolean scriptureOfFulActive = false;
-
-    public void manageScriptureOfFul() {
-        if (LOCAL_PLAYER.inCombat() && !scriptureOfFulActive) {
-            updateScriptureOfFulActivation();
-        } else if (!LOCAL_PLAYER.inCombat() && scriptureOfFulActive) {
-            updateScriptureOfFulActivation();
-        }
-    }
-
-    private void updateScriptureOfFulActivation() {
-        // Querying the component to check if Scripture of Ful is active
-        boolean isActive = isScriptureOfFulActive();
-
-        boolean shouldBeActive = shouldActivateScriptureOfFul();
-
-        if (shouldBeActive && !isActive) {
-            activateScriptureOfFul();
-        } else if (!shouldBeActive && isActive) {
-            deactivateScriptureOfFul();
-        }
-    }
-
-    private boolean isScriptureOfFulActive() {
-        // Using component query to check if Scripture of Ful is active
-        ComponentQuery query = ComponentQuery.newQuery(284).spriteId(52494);
-        ResultSet<Component> results = query.results();
-        // If the component with the specific sprite id exists, then Scripture of Ful is considered active
-        return !results.isEmpty();
-    }
-
     private void activateScriptureOfFul() {
-        if (!scriptureOfFulActive) {
-            println("Activating Scripture of Ful.");
-            if (Equipment.interact(Equipment.Slot.POCKET, "Activate")) {
-                println("Scripture of Ful activated successfully.");
-                scriptureOfFulActive = true;
-            } else {
-                println("Failed to activate Scripture of Ful.");
-            }
+        if (VarManager.getVarbitValue(30605) == 0 && VarManager.getVarbitValue(30604) >= 60) {
+            println("Activated Scripture of Ful:  " + Equipment.interact(Equipment.Slot.POCKET, "Activate/Deactivate"));
         }
     }
-
     private void deactivateScriptureOfFul() {
-        if (scriptureOfFulActive) {
-            println("Deactivating Scripture of Ful.");
-            if (Equipment.interact(Equipment.Slot.POCKET, "Deactivate")) {
-                println("Scripture of Ful deactivated.");
-                scriptureOfFulActive = false;
-            } else {
-                println("Failed to deactivate Scripture of Ful.");
-            }
-        }
-    }
-
-    private boolean shouldActivateScriptureOfFul() {
-        return LOCAL_PLAYER.inCombat() && (UseScriptureOfFul); // Assuming UseScriptureOfFul is a condition you define
-    }
-
-    private void DeathGrasp() {
-        // Check if the 'UseDeathGrasp' condition is met (this variable's declaration and assignment are not shown)
-        if (UseDeathGrasp) {
-            // Ensure the local player exists and is in combat
-            if (getLocalPlayer() != null && getLocalPlayer().inCombat()) {
-                // Ensure the local player has a target
-                if (getLocalPlayer().getTarget() != null) {
-                    // Check if the local player's adrenaline is over 25%
-                    if (getLocalPlayer().getAdrenaline() > 25) {
-                        // Query for a component with a specific sprite ID on interface 291
-                        // Note: This assumes a method `getAdrenaline()` exists that returns adrenaline as a percentage
-                        if (ComponentQuery.newQuery(291).spriteId(55524).results().isEmpty()) {
-                            // Use the ability 'Death's Grasp' if the sprite is not active
-                            boolean abilityUsed = ActionBar.useAbility("Death Grasp");
-                            if (abilityUsed) {
-                                println("Used 'Death's Grasp' on " + getLocalPlayer().getTarget().getName());
-                            } else {
-                                println("Failed to use 'Death's Grasp'");
-                            }
-                        } else {
-                            println(getLocalPlayer().getTarget().getName() + " already has the debuff.");
-                        }
-                    } else {
-                        println("Insufficient adrenaline for 'Death's Grasp'.");
-                    }
-                } else {
-                    println("No target NPC found.");
-                }
-            }
+        if (VarManager.getVarbitValue(30605) == 1) {
+            println("Deactivated Scripture of Jas:  " + Equipment.interact(Equipment.Slot.POCKET, "Activate/Deactivate"));
         }
     }
 
     public void useWeaponPoison() {
         Player localPlayer = getLocalPlayer();
-        if (localPlayer != null && !localPlayer.isMoving()) {
-            if (!hasComponentWithSpriteId(284, 30095)) {
-
-                ResultSet<Item> items = InventoryItemQuery.newQuery()
-                        .results();
+        if (localPlayer != null) {
+            if (VarManager.getVarbitValue(2102) <= 3 && getLocalPlayer().getAnimationId() != 18068) { // 2102 = time remaining 18068, animation ID for drinking / 45317 = 4 on weapon poison+++
+                ResultSet<Item> items = InventoryItemQuery.newQuery().results();
+                Pattern poisonPattern = Pattern.compile("weapon poison\\+*?", Pattern.CASE_INSENSITIVE);
 
                 Item weaponPoisonItem = items.stream()
-                        .filter(item -> item.getName() != null &&
-                                item.getName().toLowerCase().contains("weapon poison"))
+                        .filter(item -> {
+                            if (item.getName() == null) return false;
+                            Matcher matcher = poisonPattern.matcher(item.getName());
+                            return matcher.find();
+                        })
                         .findFirst()
                         .orElse(null);
 
                 if (weaponPoisonItem != null) {
                     println("Applying " + weaponPoisonItem.getName() + " ID: " + weaponPoisonItem.getId());
-                    boolean success = Backpack.interact(weaponPoisonItem.getName(), "Apply");
-                    Execution.delay(RandomGenerator.nextInt(600, 650));
+                    Backpack.interact(weaponPoisonItem.getName(), "Apply");
+                    println(weaponPoisonItem.getName() + "Has been applied");
+                    Execution.delay(RandomGenerator.nextInt(600, 700));
 
-                    if (!success) {
-                        println("Failed to apply " + weaponPoisonItem.getName());
-                    }
-                } else {
-                    println("No weapon poison found!");
                 }
             }
         }
@@ -1650,21 +1672,22 @@ public class SkeletonScript extends LoopingScript {
             }
         }
     }
+
     public void saveConfiguration() { //CIPHER PLEASE HELP ME WITH GETTING THE ADJUSTABLE SETTINGS TO SAVE, I DMED YOU BUT NO REPLY
         // Saving boolean settings
         this.configuration.addProperty("UseScriptureOfWen", String.valueOf(this.UseScriptureOfWen));
         this.configuration.addProperty("UseScriptureOfJas", String.valueOf(this.UseScriptureOfJas));
         this.configuration.addProperty("UseScriptureOfFul", String.valueOf(this.UseScriptureOfFul));
-        this.configuration.addProperty("UseWeaponPoison", String.valueOf(this.useWeaponPoison));
-        this.configuration.addProperty("UseAncientElven", String.valueOf(this.useAncientElven));
-        this.configuration.addProperty("UseAntifire", String.valueOf(this.useAntifire));
-        this.configuration.addProperty("UseExcalibur", String.valueOf(this.useExcalibur));
+        this.configuration.addProperty("useWeaponPoison", String.valueOf(this.useWeaponPoison));
+        this.configuration.addProperty("useAncientElven", String.valueOf(this.useAncientElven));
+        this.configuration.addProperty("useAntifire", String.valueOf(this.useAntifire));
+        this.configuration.addProperty("useExcalibur", String.valueOf(this.useExcalibur));
         this.configuration.addProperty("UseNecromancyPotion", String.valueOf(this.useNecromancyPotion));
         this.configuration.addProperty("UseSuperheatForm", String.valueOf(this.useSuperheatForm));
         this.configuration.addProperty("UseCrystalMask", String.valueOf(this.useCrystalMask));
         this.configuration.addProperty("UseLightForm", String.valueOf(this.useLightForm));
-        this.configuration.addProperty("UseProtection", String.valueOf(this.useProtection));
-        this.configuration.addProperty("UsePenance", String.valueOf(this.usePenance));
+        this.configuration.addProperty("useProtection", String.valueOf(this.useProtection));
+        this.configuration.addProperty("usePenance", String.valueOf(this.usePenance));
         this.configuration.addProperty("TorstolIncence", String.valueOf(this.TorstolIncence));
         this.configuration.addProperty("KwuarmIncence", String.valueOf(this.KwuarmIncence));
         this.configuration.addProperty("LantadymeIncence", String.valueOf(this.LantadymeIncence));
@@ -1684,8 +1707,10 @@ public class SkeletonScript extends LoopingScript {
         this.configuration.addProperty("eatFood", String.valueOf(this.eatFood));
         this.configuration.addProperty("useSaraBrewandBlubber", String.valueOf(this.useSaraBrewandBlubber));
         this.configuration.addProperty("useSaraBrew", String.valueOf(this.useSaraBrew));
-        this.configuration.addProperty("healthThreshold", String.valueOf(this.healthThreshold));
-        this.configuration.addProperty("prayerPointsThreshold", String.valueOf(this.prayerPointsThreshold));
+        this.configuration.addProperty("useLoot", String.valueOf(this.useLoot));
+        this.configuration.addProperty("useEssenceOfFinality", String.valueOf(this.useEssenceOfFinality));
+        this.configuration.addProperty("useVolleyofSouls", String.valueOf(this.useVolleyofSouls));
+
 
 
         this.configuration.save();
@@ -1697,10 +1722,10 @@ public class SkeletonScript extends LoopingScript {
             this.useSaraBrew = Boolean.parseBoolean(this.configuration.getProperty("useSaraBrew"));
             this.useSaraBrewandBlubber = Boolean.parseBoolean(this.configuration.getProperty("useSaraBrewandBlubber"));
             this.eatFood = Boolean.parseBoolean(this.configuration.getProperty("eatFood"));
-            this.useprayer = Boolean.parseBoolean(this.configuration.getProperty("usePrayer"));
-            this.useoverload = Boolean.parseBoolean(this.configuration.getProperty("useOverload"));
+            this.useprayer = Boolean.parseBoolean(this.configuration.getProperty("useprayer"));
+            this.useoverload = Boolean.parseBoolean(this.configuration.getProperty("useoverload"));
             this.UseSoulSplit = Boolean.parseBoolean(this.configuration.getProperty("UseSoulSplit"));
-            this.useaggression = Boolean.parseBoolean(this.configuration.getProperty("useAggression"));
+            this.useaggression = Boolean.parseBoolean(this.configuration.getProperty("useaggression"));
             this.usecooking = Boolean.parseBoolean(this.configuration.getProperty("useCooking"));
             this.usedivination = Boolean.parseBoolean(this.configuration.getProperty("useDivination"));
             this.useHunter = Boolean.parseBoolean(this.configuration.getProperty("useHunter"));
@@ -1726,12 +1751,14 @@ public class SkeletonScript extends LoopingScript {
             this.UseScriptureOfFul = Boolean.parseBoolean(this.configuration.getProperty("UseScriptureOfFul"));
             this.useWeaponPoison = Boolean.parseBoolean(this.configuration.getProperty("useWeaponPoison"));
             this.useAncientElven = Boolean.parseBoolean(this.configuration.getProperty("useAncientElven"));
-            this.healthThreshold = Integer.parseInt(this.configuration.getProperty("healthThreshold"));
-            this.prayerPointsThreshold = Integer.parseInt(this.configuration.getProperty("prayerPointsThreshold"));
+            this.useLoot = Boolean.parseBoolean(this.configuration.getProperty("useLoot"));
+            this.useEssenceOfFinality = Boolean.parseBoolean(this.configuration.getProperty("useEssenceOfFinality"));
+            this.useVolleyofSouls = Boolean.parseBoolean(this.configuration.getProperty("useVolleyofSouls"));
+
 
             println("Configuration loaded successfully.");
         } catch (Exception e) {
             println("Failed to load configuration. Using defaults.");
         }
     }
-    }
+}
