@@ -46,7 +46,7 @@ import static net.botwithus.rs3.game.scene.entities.characters.player.LocalPlaye
 
 public class SkeletonScript extends LoopingScript {
     boolean useThievingDummy;
-    boolean UseDeathGrasp;
+    boolean Essence;
     boolean UseScriptureOfJas;
     boolean UseScriptureOfFul;
     boolean UseScriptureOfWen;
@@ -286,6 +286,9 @@ public class SkeletonScript extends LoopingScript {
         if (getLocalPlayer() != null && Client.getGameState() == Client.GameState.LOGGED_IN && !scriptRunning) {
             return;
         }
+        if (Essence)
+            DeathEssence();
+
         if (useVolleyofSouls)
             volleyOfSouls();
 
@@ -910,7 +913,7 @@ public class SkeletonScript extends LoopingScript {
     private void essenceOfFinality() {
         if (getLocalPlayer().getAdrenaline() >= 300
                 && ComponentQuery.newQuery(291).spriteId(55524).results().isEmpty()
-                && ActionBar.getCooldownPrecise("Essence of Finality") == 0) {
+                && ActionBar.getCooldownPrecise("Essence of Finality") == 0 && getLocalPlayer().inCombat()) {
             if (VarManager.getVarValue(VarDomainType.PLAYER, 10986) >= NecrosisStacksThreshold) {
                 println("Used Death Grasp: " + ActionBar.useAbility("Essence of Finality"));
                 Execution.delayUntil(RandomGenerator.nextInt(1800, 2000), () -> ComponentQuery.newQuery(291).spriteId(55524).results().isEmpty());
@@ -921,7 +924,7 @@ public class SkeletonScript extends LoopingScript {
     public static int VolleyOfSoulsThreshold = 5;
 
     private void volleyOfSouls() {
-        if (VarManager.getVarValue(VarDomainType.PLAYER, 11035) >= VolleyOfSoulsThreshold) {
+        if (VarManager.getVarValue(VarDomainType.PLAYER, 11035) >= VolleyOfSoulsThreshold && getLocalPlayer().inCombat()) {
             println("Using Volley of Souls: " + ActionBar.useAbility("Volley of Souls"));
             Execution.delayUntil(RandomGenerator.nextInt(1800, 2000), () -> RisidualSouls >= VolleyOfSoulsThreshold);
         }
@@ -934,6 +937,17 @@ public class SkeletonScript extends LoopingScript {
                 if (VarManager.getVarbitValue(53247) == 0 && getLocalPlayer().getFollowing() != null && getLocalPlayer().getFollowing().getCurrentHealth() >= 500 && ActionBar.getCooldownPrecise("Invoke Death") == 0) {
                     println("Used Invoke: " + ActionBar.useAbility("Invoke Death"));
                     Execution.delayUntil(RandomGenerator.nextInt(360000, 400000), () -> VarManager.getVarbitValue(53247) == 0);
+                }
+            }
+        }
+    }
+    private void DeathEssence() { //55480 sprite iD
+        if (Essence) {
+            if (getLocalPlayer() != null) {
+
+                if (getLocalPlayer().getFollowing() != null && getLocalPlayer().getFollowing().getCurrentHealth() >= 500 && ComponentQuery.newQuery(291).spriteId(55480).results().isEmpty()) {
+                    println("Used Death Essence: " + ActionBar.useAbility("Death Essence"));
+                    Execution.delayUntil(RandomGenerator.nextInt(360000, 400000), () -> !ComponentQuery.newQuery(291).spriteId(55480).results().isEmpty());
                 }
             }
         }
@@ -1710,6 +1724,7 @@ public class SkeletonScript extends LoopingScript {
         this.configuration.addProperty("useLoot", String.valueOf(this.useLoot));
         this.configuration.addProperty("useEssenceOfFinality", String.valueOf(this.useEssenceOfFinality));
         this.configuration.addProperty("useVolleyofSouls", String.valueOf(this.useVolleyofSouls));
+        this.configuration.addProperty("Essence", String.valueOf(this.Essence));
 
 
 
@@ -1754,6 +1769,7 @@ public class SkeletonScript extends LoopingScript {
             this.useLoot = Boolean.parseBoolean(this.configuration.getProperty("useLoot"));
             this.useEssenceOfFinality = Boolean.parseBoolean(this.configuration.getProperty("useEssenceOfFinality"));
             this.useVolleyofSouls = Boolean.parseBoolean(this.configuration.getProperty("useVolleyofSouls"));
+            this.Essence = Boolean.parseBoolean(this.configuration.getProperty("Essence"));
 
 
             println("Configuration loaded successfully.");

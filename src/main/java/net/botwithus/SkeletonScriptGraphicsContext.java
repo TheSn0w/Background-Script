@@ -324,6 +324,10 @@ public class SkeletonScriptGraphicsContext extends ScriptGraphicsContext {
                     } else if (SkeletonScript.VolleyOfSoulsThreshold > 5) {
                         SkeletonScript.VolleyOfSoulsThreshold = 5; // Ensure threshold does not exceed 5
                     }
+                    script.Essence = ImGui.Checkbox("OmniGuard Special Attack", script.Essence);
+                    if (ImGui.IsItemHovered()) {
+                        ImGui.SetTooltip("Have on Action Bar.");
+                    }
 
                     script.UseVulnBomb = ImGui.Checkbox("Use Vulnerability Bomb", script.UseVulnBomb);
                     if (ImGui.IsItemHovered()) {
