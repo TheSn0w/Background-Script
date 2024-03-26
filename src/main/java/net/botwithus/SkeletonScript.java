@@ -37,7 +37,9 @@ import net.botwithus.rs3.util.Regex;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
+import java.util.Objects;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -46,6 +48,7 @@ import static net.botwithus.rs3.game.scene.entities.characters.player.LocalPlaye
 
 public class SkeletonScript extends LoopingScript {
     boolean useThievingDummy;
+    boolean AttackaTarget;
     boolean Essence;
     boolean UseScriptureOfJas;
     boolean UseScriptureOfFul;
@@ -417,6 +420,38 @@ public class SkeletonScript extends LoopingScript {
 
         if (useEssenceOfFinality)
             essenceOfFinality();
+        if (AttackaTarget)
+            attackTarget();
+    }
+    private String targetName = "";
+
+    public String getTargetName() {
+        return targetName;
+    }
+
+    public void setTargetName(String targetName) {
+        // Assuming target names are case-sensitive; adjust if necessary
+        this.targetName = targetName;
+    }
+
+    public void clearTargetName() {
+        this.targetName = "";
+    }
+    private void attackTarget() {
+        if (targetName.isEmpty() || Client.getLocalPlayer() == null) {
+            return;
+        }
+
+        // Directly query for the nearest NPC that matches the target name and is valid
+        NpcQuery.newQuery().results().stream()
+                .filter(npc -> npc.getName().equalsIgnoreCase(targetName) && npc.validate())
+                .min(Comparator.comparingInt(npc -> (int) npc.getCoordinate().distanceTo(Client.getLocalPlayer().getCoordinate())))
+                .ifPresent(npc -> {
+                    println("Attacking " + npc.getName());
+                    npc.interact("Attack");
+                    // Wait until the NPC is no longer valid or until the specified time range has elapsed
+                    Execution.delayUntil(30000, () -> !getLocalPlayer().hasTarget());
+                });
     }
 
     private List<String> targetItemNames = new ArrayList<>();
@@ -508,7 +543,7 @@ public class SkeletonScript extends LoopingScript {
             boolean interactionSuccess = groundItem.interact("Take");
             Execution.delay(RandomGenerator.nextInt(500, 900));
             if (interactionSuccess) {
-                Execution.delayUntil(RandomGenerator.nextInt(500, 1000), () -> GroundItemQuery.newQuery().name(groundItem.getName()).results().isEmpty());
+                Execution.delayUntil(RandomGenerator.nextInt(4500, 5000), () -> GroundItemQuery.newQuery().name(groundItem.getName()).results().isEmpty());
             }
         }
     }
@@ -640,12 +675,10 @@ public class SkeletonScript extends LoopingScript {
     }
 
     public void manageSoulSplit() {
-        if (getLocalPlayer() != null) {
-        if (getLocalPlayer().inCombat()) {
+        if (getLocalPlayer() != null && getLocalPlayer().inCombat()) {
             ActivateSoulSplit();
         } else
             DeactivateSoulSplit();
-        }
     }
 
     private void ActivateSoulSplit() {
@@ -913,10 +946,10 @@ public class SkeletonScript extends LoopingScript {
     private void essenceOfFinality() {
         if (getLocalPlayer().getAdrenaline() >= 300
                 && ComponentQuery.newQuery(291).spriteId(55524).results().isEmpty()
-                && ActionBar.getCooldownPrecise("Essence of Finality") == 0 && getLocalPlayer().inCombat()) {
+                && ActionBar.getCooldownPrecise("Essence of Finality") == 0 && getLocalPlayer().inCombat() && getLocalPlayer().getFollowing() != null && getLocalPlayer().hasTarget()){
             if (VarManager.getVarValue(VarDomainType.PLAYER, 10986) >= NecrosisStacksThreshold) {
                 println("Used Death Grasp: " + ActionBar.useAbility("Essence of Finality"));
-                Execution.delayUntil(RandomGenerator.nextInt(1800, 2000), () -> ComponentQuery.newQuery(291).spriteId(55524).results().isEmpty());
+                Execution.delayUntil(RandomGenerator.nextInt(1820, 1850), () -> ComponentQuery.newQuery(291).spriteId(55524).results().isEmpty());
             }
         }
     }
@@ -924,9 +957,9 @@ public class SkeletonScript extends LoopingScript {
     public static int VolleyOfSoulsThreshold = 5;
 
     private void volleyOfSouls() {
-        if (VarManager.getVarValue(VarDomainType.PLAYER, 11035) >= VolleyOfSoulsThreshold && getLocalPlayer().inCombat()) {
+        if (VarManager.getVarValue(VarDomainType.PLAYER, 11035) >= VolleyOfSoulsThreshold && getLocalPlayer().inCombat() && getLocalPlayer().getFollowing() != null && getLocalPlayer().hasTarget()) {
             println("Using Volley of Souls: " + ActionBar.useAbility("Volley of Souls"));
-            Execution.delayUntil(RandomGenerator.nextInt(1800, 2000), () -> RisidualSouls >= VolleyOfSoulsThreshold);
+            Execution.delayUntil(RandomGenerator.nextInt(1820, 1850), () -> RisidualSouls >= VolleyOfSoulsThreshold);
         }
     }
 
@@ -934,9 +967,9 @@ public class SkeletonScript extends LoopingScript {
         if (InvokeDeath) {
             if (getLocalPlayer() != null) {
 
-                if (VarManager.getVarbitValue(53247) == 0 && getLocalPlayer().getFollowing() != null && getLocalPlayer().getFollowing().getCurrentHealth() >= 500 && ActionBar.getCooldownPrecise("Invoke Death") == 0) {
+                if (VarManager.getVarbitValue(53247) == 0 && getLocalPlayer().getFollowing() != null && getLocalPlayer().getFollowing().getCurrentHealth() >= 500 && ActionBar.getCooldownPrecise("Invoke Death") == 0 && getLocalPlayer().hasTarget()) {
                     println("Used Invoke: " + ActionBar.useAbility("Invoke Death"));
-                    Execution.delayUntil(RandomGenerator.nextInt(360000, 400000), () -> VarManager.getVarbitValue(53247) == 0);
+                    Execution.delayUntil(RandomGenerator.nextInt(1820, 1850), () -> VarManager.getVarbitValue(53247) == 0);
                 }
             }
         }
@@ -945,9 +978,9 @@ public class SkeletonScript extends LoopingScript {
         if (Essence) {
             if (getLocalPlayer() != null) {
 
-                if (getLocalPlayer().getFollowing() != null && getLocalPlayer().getFollowing().getCurrentHealth() >= 500 && ComponentQuery.newQuery(291).spriteId(55480).results().isEmpty()) {
-                    println("Used Death Essence: " + ActionBar.useAbility("Death Essence"));
-                    Execution.delayUntil(RandomGenerator.nextInt(360000, 400000), () -> !ComponentQuery.newQuery(291).spriteId(55480).results().isEmpty());
+                if (getLocalPlayer().getFollowing() != null && getLocalPlayer().getFollowing().getCurrentHealth() >= 500 && ComponentQuery.newQuery(291).spriteId(55480).results().isEmpty() && getLocalPlayer().hasTarget()) {
+                    println("Used Death Essence: " + ActionBar.useAbility("Weapon Special Attack"));
+                    Execution.delayUntil(RandomGenerator.nextInt(1820, 1850), () -> ComponentQuery.newQuery(291).spriteId(55480).results().isEmpty());
                 }
             }
         }
