@@ -472,14 +472,15 @@ public class SkeletonScriptGraphicsContext extends ScriptGraphicsContext {
                         ImGui.EndChild();
                     }
                     script.AttackaTarget = ImGui.Checkbox("Attack a Target", script.AttackaTarget);
+                    if (ImGui.IsItemHovered()) {
+                        ImGui.SetTooltip("If enabled but no target input, will attack all targets nearby");
+                    }
                     ImGui.SeparatorText("Attack Options");
                     this.targetName = ImGui.InputText("Target name", this.targetName);
 
+
 // Button to add the target name to the list
                     if (ImGui.Button("Add Target") && !this.targetName.isEmpty()) {
-                        if (ImGui.IsItemHovered()) {
-                            ImGui.SetTooltip("If enabled but no target input, will attack all targets nearby");
-                        }
                         script.addTargetName(this.targetName);
                         this.targetName = ""; // Clear the field after adding
                     }
