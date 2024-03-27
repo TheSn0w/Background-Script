@@ -20,6 +20,7 @@ public class SkeletonScriptGraphicsContext extends ScriptGraphicsContext {
     private SkeletonScript script;
     private String logoutTimeStr = ""; // HH:MM format
     private String targetName = "";
+    private List<String> targetNames = new ArrayList<>();
 
     public String getTargetName() {
         return targetName;
@@ -470,33 +471,41 @@ public class SkeletonScriptGraphicsContext extends ScriptGraphicsContext {
                         }
                         ImGui.EndChild();
                     }
-                   /* script.AttackaTarget = ImGui.Checkbox("Attack a Target", script.AttackaTarget);
+                    script.AttackaTarget = ImGui.Checkbox("Attack a Target", script.AttackaTarget);
                     ImGui.SeparatorText("Attack Options");
                     this.targetName = ImGui.InputText("Target name", this.targetName);
 
-// Button to set the target name, similar to adding an item in the loot options
-                    if (ImGui.Button("Set Target") && !this.targetName.isEmpty()) {
-                        script.setTargetName(this.targetName);
-                        // Optionally, you can clear the field here if you want the text input to be empty after setting the target
-                        // this.targetName = "";
+// Button to add the target name to the list
+                    if (ImGui.Button("Add Target") && !this.targetName.isEmpty()) {
+                        script.addTargetName(this.targetName);
+                        this.targetName = ""; // Clear the field after adding
                     }
 
                     if (ImGui.IsItemHovered()) {
-                        ImGui.SetTooltip("Enter the name of the target to attack.");
+                        ImGui.SetTooltip("Enter the name of the target to attack. Case-insensitive, partial names allowed.");
                     }
 
-// BeginChild and EndChild to encapsulate the list of targets, for now, it's a single target
-                    if (!script.getTargetName().isEmpty()) {
-                        if (ImGui.BeginChild("Target List", 0, 100, true, 0)) {
-                            ImGui.Text("Current Target: " + script.getTargetName());
-                            // Here you can add buttons or options to remove or modify the current target
-                            // For example, a button to clear the current target (not implemented in your script yet)
-                            if (ImGui.Button("Clear Target")) {
-                                script.clearTargetName(); // You'll need to implement this method to clear the target name
+// Display the list of targets with options to remove them
+                    if (!script.getTargetNames().isEmpty()) {
+                        if (ImGui.BeginChild("Targets List", 0, 100, true, 0)) {
+                            boolean firstItem = true;
+                            for (String targetName : new ArrayList<>(script.getTargetNames())) {
+                                if (!firstItem) {
+                                    ImGui.SameLine();
+                                }
+                                firstItem = false;
+
+                                if (ImGui.Button(targetName)) {
+                                    script.removeTargetName(targetName);
+                                    break; // Exit the loop to avoid concurrent modification issues
+                                }
+                                if (ImGui.IsItemHovered()) {
+                                    ImGui.SetTooltip("Click to remove this target");
+                                }
                             }
                         }
                         ImGui.EndChild();
-                    }*/
+                    }
 
 
                     long elapsedTimeMillis = System.currentTimeMillis() - this.scriptStartTime;

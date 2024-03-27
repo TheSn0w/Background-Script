@@ -36,10 +36,7 @@ import net.botwithus.rs3.util.Regex;
 
 import java.time.Duration;
 import java.time.Instant;
-import java.util.ArrayList;
-import java.util.Comparator;
-import java.util.List;
-import java.util.Objects;
+import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -423,14 +420,28 @@ public class SkeletonScript extends LoopingScript {
         if (AttackaTarget)
             attackTarget();
     }
-    private String targetName = "";
+    private List<String> targetNames = new ArrayList<>();
 
-    public String getTargetName() {
-        return targetName;
+    public void addTargetName(String targetName) {
+        println("Adding target name: " + targetName);
+        String lowerCaseName = targetName.toLowerCase();
+        if (!targetNames.contains(lowerCaseName)) {
+            targetNames.add(lowerCaseName);
+        }
     }
 
+    public void removeTargetName(String targetName) {
+        targetNames.remove(targetName.toLowerCase());
+    }
+
+    public List<String> getTargetNames() {
+        return new ArrayList<>(targetNames); // Return a copy to avoid modification
+    }
+    private String targetName = "";
+
+
     public void setTargetName(String targetName) {
-        // Assuming target names are case-sensitive; adjust if necessary
+        println("Setting target name to: " + targetName);
         this.targetName = targetName;
     }
 
@@ -438,21 +449,53 @@ public class SkeletonScript extends LoopingScript {
         this.targetName = "";
     }
     private void attackTarget() {
-        if (targetName.isEmpty() || Client.getLocalPlayer() == null) {
+        if (getLocalPlayer() == null) {
             return;
         }
 
-        // Directly query for the nearest NPC that matches the target name and is valid
-        NpcQuery.newQuery().results().stream()
-                .filter(npc -> npc.getName().equalsIgnoreCase(targetName) && npc.validate())
-                .min(Comparator.comparingInt(npc -> (int) npc.getCoordinate().distanceTo(Client.getLocalPlayer().getCoordinate())))
-                .ifPresent(npc -> {
-                    println("Attacking " + npc.getName());
-                    npc.interact("Attack");
-                    // Wait until the NPC is no longer valid or until the specified time range has elapsed
-                    Execution.delayUntil(30000, () -> !getLocalPlayer().hasTarget());
-                });
+        List<String> excludedNameFragments = Arrays.asList("vengeful", "putrid", "skeleton", "ripper");
+        Npc targetNpc = null;
+
+        for (String target : targetNames) {
+            String targetLower = target.toLowerCase();
+            targetNpc = NpcQuery.newQuery().results().stream()
+                    .filter(npc -> npc.getName().toLowerCase().contains(targetLower))
+                    .filter(npc -> excludedNameFragments.stream().noneMatch(excluded -> npc.getName().toLowerCase().contains(excluded)))
+                    .findFirst()
+                    .orElse(null);
+
+            if (targetNpc != null) {
+                break;
+            }
+        }
+
+        if (targetNpc == null) {
+            targetNpc = NpcQuery.newQuery().results().stream()
+                    .filter(npc -> excludedNameFragments.stream().noneMatch(excluded -> npc.getName().toLowerCase().contains(excluded)))
+                    .min(Comparator.comparingInt(npc -> (int) npc.distanceTo(getLocalPlayer())))
+                    .orElse(null);
+        }
+
+        if (waitingForAttackCompletion) {
+            if (System.currentTimeMillis() - lastAttackTime > 60000 || getLocalPlayer().getFollowing() == null) {
+                println("Attack completed or 20 seconds have passed.");
+                waitingForAttackCompletion = false; // Reset the flag
+            } else {
+                return; // Still waiting, exit early
+            }
+        }
+
+        if (targetNpc != null) {
+            println("Attacking " + targetNpc.getName());
+            targetNpc.interact("Attack");
+            lastAttackTime = System.currentTimeMillis();
+            waitingForAttackCompletion = true; // Start waiting for completion
+        }
     }
+    private long lastAttackTime = -1; // -1 indicates no attack has been initiated
+    private boolean waitingForAttackCompletion = false;
+
+
 
     private List<String> targetItemNames = new ArrayList<>();
 
@@ -953,6 +996,17 @@ public class SkeletonScript extends LoopingScript {
             }
         }
     }
+    private void DeathEssence() { //55480 sprite iD
+        if (Essence) {
+            if (getLocalPlayer() != null) {
+
+                if (getLocalPlayer().getAdrenaline() >= 350 && getLocalPlayer().getFollowing() != null && getLocalPlayer().getFollowing().getCurrentHealth() >= 500 && ComponentQuery.newQuery(291).spriteId(55480).results().isEmpty() && getLocalPlayer().hasTarget()) {
+                    println("Used Death Essence: " + ActionBar.useAbility("Weapon Special Attack"));
+                    Execution.delayUntil(RandomGenerator.nextInt(1820, 1850), () -> ComponentQuery.newQuery(291).spriteId(55480).results().isEmpty());
+                }
+            }
+        }
+    }
     int RisidualSouls = VarManager.getVarValue(VarDomainType.PLAYER, 11035);
     public static int VolleyOfSoulsThreshold = 5;
 
@@ -970,17 +1024,6 @@ public class SkeletonScript extends LoopingScript {
                 if (VarManager.getVarbitValue(53247) == 0 && getLocalPlayer().getFollowing() != null && getLocalPlayer().getFollowing().getCurrentHealth() >= 500 && ActionBar.getCooldownPrecise("Invoke Death") == 0 && getLocalPlayer().hasTarget()) {
                     println("Used Invoke: " + ActionBar.useAbility("Invoke Death"));
                     Execution.delayUntil(RandomGenerator.nextInt(1820, 1850), () -> VarManager.getVarbitValue(53247) == 0);
-                }
-            }
-        }
-    }
-    private void DeathEssence() { //55480 sprite iD
-        if (Essence) {
-            if (getLocalPlayer() != null) {
-
-                if (getLocalPlayer().getFollowing() != null && getLocalPlayer().getFollowing().getCurrentHealth() >= 500 && ComponentQuery.newQuery(291).spriteId(55480).results().isEmpty() && getLocalPlayer().hasTarget()) {
-                    println("Used Death Essence: " + ActionBar.useAbility("Weapon Special Attack"));
-                    Execution.delayUntil(RandomGenerator.nextInt(1820, 1850), () -> ComponentQuery.newQuery(291).spriteId(55480).results().isEmpty());
                 }
             }
         }
@@ -1758,6 +1801,7 @@ public class SkeletonScript extends LoopingScript {
         this.configuration.addProperty("useEssenceOfFinality", String.valueOf(this.useEssenceOfFinality));
         this.configuration.addProperty("useVolleyofSouls", String.valueOf(this.useVolleyofSouls));
         this.configuration.addProperty("Essence", String.valueOf(this.Essence));
+        this.configuration.addProperty("AttackaTarget", String.valueOf(this.AttackaTarget));
 
 
 
@@ -1803,6 +1847,7 @@ public class SkeletonScript extends LoopingScript {
             this.useEssenceOfFinality = Boolean.parseBoolean(this.configuration.getProperty("useEssenceOfFinality"));
             this.useVolleyofSouls = Boolean.parseBoolean(this.configuration.getProperty("useVolleyofSouls"));
             this.Essence = Boolean.parseBoolean(this.configuration.getProperty("Essence"));
+            this.AttackaTarget = Boolean.parseBoolean(this.configuration.getProperty("AttackaTarget"));
 
 
             println("Configuration loaded successfully.");
