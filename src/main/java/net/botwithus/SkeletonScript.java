@@ -650,8 +650,9 @@ public class SkeletonScript extends LoopingScript {
 
                 if (prayerOrRestorePot != null) {
                     println("Drinking " + prayerOrRestorePot.getName());
+                    Execution.delay(RandomGenerator.nextInt(600, 1500));
                     boolean success = Backpack.interact(prayerOrRestorePot.getName(), "Drink");
-                    Execution.delay(RandomGenerator.nextInt(1600, 2100));
+                    Execution.delay(RandomGenerator.nextInt(1180, 1220));
 
                     if (!success) {
                         println("Failed to use " + prayerOrRestorePot.getName());
@@ -678,6 +679,7 @@ public class SkeletonScript extends LoopingScript {
 
             if (overloadPot != null) {
                 println("Drinking " + overloadPot.getName());
+                Execution.delay(RandomGenerator.nextInt(600, 1500));
                 Backpack.interact(overloadPot.getName(), "Drink");
                 Execution.delay(RandomGenerator.nextInt(1180, 1220));
             }
@@ -702,11 +704,12 @@ public class SkeletonScript extends LoopingScript {
                     if (aggressionFlask != null) {
                         boolean success = Backpack.interact(aggressionFlask.getName(), "Drink");
                         if (success) {
+                            Execution.delay(RandomGenerator.nextInt(1180, 1220));
                             println("Using aggression potion: " + aggressionFlask.getName());
                         } else {
                             println("Failed to use aggression potion: " + aggressionFlask.getName());
                         }
-                        Execution.delay(RandomGenerator.nextInt(2000, 3000));
+                        Execution.delay(RandomGenerator.nextInt(1180, 1220));
                     }
                 } else {
                     println("No aggression flasks found.");
@@ -726,11 +729,13 @@ public class SkeletonScript extends LoopingScript {
 
     private void ActivateSoulSplit() {
         if (VarManager.getVarbitValue(16779) == 0) {
+            Execution.delay(RandomGenerator.nextInt(600, 1500));
             println("Activating Soul Split:  " + ActionBar.useAbility("Soul Split"));
         }
     }
     private void DeactivateSoulSplit() {
         if (VarManager.getVarbitValue(16779) == 1) {
+            Execution.delay(RandomGenerator.nextInt(600, 1500));
             println("Deactivating Soul Split:  " + ActionBar.useAbility("Soul Split"));
         }
     }
@@ -1664,6 +1669,7 @@ public class SkeletonScript extends LoopingScript {
     }
     private void activateScriptureOfJas() {
         if (VarManager.getVarbitValue(30605) == 0 && VarManager.getVarbitValue(30604) >= 60) {
+            Execution.delay(RandomGenerator.nextInt(600, 1500));
             println("Activated Scripture of Jas:  " + Equipment.interact(Equipment.Slot.POCKET, "Activate/Deactivate"));
         }
     }
@@ -1671,6 +1677,7 @@ public class SkeletonScript extends LoopingScript {
 
     private void deactivateScriptureOfJas() {
         if (VarManager.getVarbitValue(30605) == 1) {
+            Execution.delay(RandomGenerator.nextInt(600, 1500));
             println("Deactivated Scripture of Jas:  " + Equipment.interact(Equipment.Slot.POCKET, "Activate/Deactivate"));
         }
     }
@@ -1685,12 +1692,14 @@ public class SkeletonScript extends LoopingScript {
     }
     private void activateScriptureOfWen() {
         if (VarManager.getVarbitValue(30605) == 0 && VarManager.getVarbitValue(30604) >= 60) {
+            Execution.delay(RandomGenerator.nextInt(600, 1500));
             println("Activated Scripture of Wen:  " + Equipment.interact(Equipment.Slot.POCKET, "Activate/Deactivate"));
         }
     }
 
     private void deactivateScriptureOfWen() {
         if (VarManager.getVarbitValue(30605) == 1) {
+            Execution.delay(RandomGenerator.nextInt(600, 1500));
             println("Deactivated Scripture of Wen:  " + Equipment.interact(Equipment.Slot.POCKET, "Activate/Deactivate"));
         }
     }
@@ -1706,11 +1715,13 @@ public class SkeletonScript extends LoopingScript {
     }
     private void activateScriptureOfFul() {
         if (VarManager.getVarbitValue(30605) == 0 && VarManager.getVarbitValue(30604) >= 60) {
+            Execution.delay(RandomGenerator.nextInt(600, 1500));
             println("Activated Scripture of Ful:  " + Equipment.interact(Equipment.Slot.POCKET, "Activate/Deactivate"));
         }
     }
     private void deactivateScriptureOfFul() {
         if (VarManager.getVarbitValue(30605) == 1) {
+            Execution.delay(RandomGenerator.nextInt(600, 1500));
             println("Deactivated Scripture of Jas:  " + Equipment.interact(Equipment.Slot.POCKET, "Activate/Deactivate"));
         }
     }
@@ -1733,6 +1744,7 @@ public class SkeletonScript extends LoopingScript {
 
                 if (weaponPoisonItem != null) {
                     println("Applying " + weaponPoisonItem.getName() + " ID: " + weaponPoisonItem.getId());
+                    Execution.delay(RandomGenerator.nextInt(600, 1500));
                     Backpack.interact(weaponPoisonItem.getName(), "Apply");
                     println(weaponPoisonItem.getName() + "Has been applied");
                     Execution.delay(RandomGenerator.nextInt(600, 700));
