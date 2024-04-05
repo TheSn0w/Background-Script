@@ -16,169 +16,31 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 
+import static net.botwithus.SkeletonScript.*;
+import static net.botwithus.SkeletonScript.maxHopIntervalMinutes;
+
 public class SkeletonScriptGraphicsContext extends ScriptGraphicsContext {
     private SkeletonScript script;
-    private String logoutTimeStr = ""; // HH:MM format
     private String targetName = "";
-    private List<String> targetNames = new ArrayList<>();
-
-    public String getTargetName() {
-        return targetName;
-    }
-
-    public void setTargetName(String targetName) {
-        // Assuming target names are case-sensitive; adjust if necessary
-        this.targetName = targetName;
-    }
-
-    public void clearTargetName() {
-        this.targetName = "";
-    }
-
-
+    private String selectedItemToUseOnNotepaper = "";
+    private String selectedItem = "";
+    private String saveSettingsFeedbackMessage = "";
     private long scriptStartTime;
     boolean isScriptRunning = false;
-    private String logoutHoursStr = "0"; // Default to 0 hours
-    private String logoutMinutesStr = "0"; // Default to 0 minutes
-    private long targetLogoutTimeMillis = 0;
-
+    private String logoutHoursStr = "0";
+    private String logoutMinutesStr = "0";
     private Instant startTime;
-    private int startingXP;
-    int startingAttackXP = Skills.ATTACK.getSkill().getExperience();
-    int startingDefenseXP = Skills.DEFENSE.getSkill().getExperience();
-    int startingStrengthXP = Skills.STRENGTH.getSkill().getExperience();
-    int startingConstitutionXP = Skills.CONSTITUTION.getSkill().getExperience();
-    int startingRangedXP = Skills.RANGED.getSkill().getExperience();
-    int startingPrayerXP = Skills.PRAYER.getSkill().getExperience();
-    int startingMagicXP = Skills.MAGIC.getSkill().getExperience();
-    int startingCookingXP = Skills.COOKING.getSkill().getExperience();
-    int startingWoodcuttingXP = Skills.WOODCUTTING.getSkill().getExperience();
-    int startingFletchingXP = Skills.FLETCHING.getSkill().getExperience();
-    int startingFishingXP = Skills.FISHING.getSkill().getExperience();
-    int startingFiremakingXP = Skills.FIREMAKING.getSkill().getExperience();
-    int startingCraftingXP = Skills.CRAFTING.getSkill().getExperience();
-    int startingSmithingXP = Skills.SMITHING.getSkill().getExperience();
-    int startingMiningXP = Skills.MINING.getSkill().getExperience();
-    int startingHerbloreXP = Skills.HERBLORE.getSkill().getExperience();
-    int startingAgilityXP = Skills.AGILITY.getSkill().getExperience();
-    int startingThievingXP = Skills.THIEVING.getSkill().getExperience();
-    int startingSlayerXP = Skills.SLAYER.getSkill().getExperience();
-    int startingFarmingXP = Skills.FARMING.getSkill().getExperience();
-    int startingRunecraftingXP = Skills.RUNECRAFTING.getSkill().getExperience();
-    int startingHunterXP = Skills.HUNTER.getSkill().getExperience();
-    int startingConstructionXP = Skills.CONSTRUCTION.getSkill().getExperience();
-    int startingSummoningXP = Skills.SUMMONING.getSkill().getExperience();
-    int startingDungeoneeringXP = Skills.DUNGEONEERING.getSkill().getExperience();
-    int startingDivinationXP = Skills.DIVINATION.getSkill().getExperience();
-    int startingInventionXP = Skills.INVENTION.getSkill().getExperience();
-    int startingArchaeologyXP = Skills.ARCHAEOLOGY.getSkill().getExperience();
-    int startingNecromancyXP = Skills.NECROMANCY.getSkill().getExperience();
-    private final int startingAttackLevel;
-    private final int startingStrengthLevel;
-    private final int startingDefenseLevel;
-    private final int startingRangedLevel;
-    private final int startingPrayerLevel;
-    private final int startingMagicLevel;
-    private final int startingRunecraftingLevel;
-    private final int startingConstructionLevel;
-    private final int startingDungeoneeringLevel;
-    private final int startingArchaeologyLevel;
-    private final int startingConstitutionLevel;
-    private final int startingAgilityLevel;
-    private final int startingHerbloreLevel;
-    private final int startingThievingLevel;
-    private final int startingCraftingLevel;
-    private final int startingFletchingLevel;
-    private final int startingSlayerLevel;
-    private final int startingHunterLevel;
-    private final int startingDivinationLevel;
-    private final int startingNecromancyLevel;
-    private final int startingMiningLevel;
-    private final int startingSmithingLevel;
-    private final int startingFishingLevel;
-    private final int startingCookingLevel;
-    private final int startingFiremakingLevel;
-    private final int startingWoodcuttingLevel;
-    private final int startingFarmingLevel;
-    private final int startingSummoningLevel;
-    private final int startingInventionLevel;
-    private boolean showAttackStats = false;
-    private boolean showStrengthStats = false;
-    private boolean showDefenseStats = false;
-    private boolean showRangedStats = false;
-    private boolean showPrayerStats = false;
-    private boolean showMagicStats = false;
-    private boolean showRunecraftingStats = false;
-    private boolean showConstructionStats = false;
-    private boolean showDungeoneeringStats = false;
-    private boolean showArchaeologyStats = false;
-    private boolean showConstitutionStats = false;
-    private boolean showAgilityStats = false;
-    private boolean showHerbloreStats = false;
-    private boolean showThievingStats = false;
-    private boolean showCraftingStats = false;
-    private boolean showFletchingStats = false;
-    private boolean showSlayerStats = false;
-    private boolean showHunterStats = false;
-    private boolean showDivinationStats = false;
-    private boolean showNecromancyStats = false;
-    private boolean showMiningStats = false;
-    private boolean showSmithingStats = false;
-    private boolean showFishingStats = false;
-    private boolean showCookingStats = false;
-    private boolean showFiremakingStats = false;
-    private boolean showWoodcuttingStats = false;
-    private boolean showFarmingStats = false;
-    private boolean showSummoningStats = false;
-    private boolean showInventionStats = false;
-
-
-    private String healthFeedbackMessage = "";
-    private String prayerFeedbackMessage = "";
     private String logoutFeedbackMessage = "";
-    private String prayerPointsThresholdStr = "5000";
-    private String healthThresholdStr = "50";
+
     private static float RGBToFloat(int rgbValue) {
         return rgbValue / 255.0f;
     }
-    private List<String> targetItemNames = new ArrayList<>();
-    private String selectedItem = "";
-    private String saveSettingsFeedbackMessage = "";
 
     public SkeletonScriptGraphicsContext(ScriptConsole scriptConsole, SkeletonScript script) {
         super(scriptConsole);
         this.script = script;
         this.startTime = Instant.now();
         this.scriptStartTime = System.currentTimeMillis();
-        this.startingRunecraftingLevel = script.getStartingRunecraftingLevel();
-        this.startingAttackLevel = script.getStartingAttackLevel();
-        this.startingStrengthLevel = script.getStartingStrengthLevel();
-        this.startingDefenseLevel = script.getStartingDefenseLevel();
-        this.startingRangedLevel = script.getStartingRangedLevel();
-        this.startingPrayerLevel = script.getStartingPrayerLevel();
-        this.startingMagicLevel = script.getStartingMagicLevel();
-        this.startingConstructionLevel = script.getStartingConstructionLevel();
-        this.startingDungeoneeringLevel = script.getStartingDungeoneeringLevel();
-        this.startingArchaeologyLevel = script.getStartingArchaeologyLevel();
-        this.startingConstitutionLevel = script.getStartingConstitutionLevel();
-        this.startingAgilityLevel = script.getStartingAgilityLevel();
-        this.startingHerbloreLevel = script.getStartingHerbloreLevel();
-        this.startingThievingLevel = script.getStartingThievingLevel();
-        this.startingCraftingLevel = script.getStartingCraftingLevel();
-        this.startingFletchingLevel = script.getStartingFletchingLevel();
-        this.startingSlayerLevel = script.getStartingSlayerLevel();
-        this.startingHunterLevel = script.getStartingHunterLevel();
-        this.startingDivinationLevel = script.getStartingDivinationLevel();
-        this.startingNecromancyLevel = script.getStartingNecromancyLevel();
-        this.startingMiningLevel = script.getStartingMiningLevel();
-        this.startingSmithingLevel = script.getStartingSmithingLevel();
-        this.startingFishingLevel = script.getStartingFishingLevel();
-        this.startingCookingLevel = script.getStartingCookingLevel();
-        this.startingFiremakingLevel = script.getStartingFiremakingLevel();
-        this.startingWoodcuttingLevel = script.getStartingWoodcuttingLevel();
-        this.startingFarmingLevel = script.getStartingFarmingLevel();
-        this.startingSummoningLevel = script.getStartingSummoningLevel();
-        this.startingInventionLevel = script.getStartingInventionLevel();
     }
 
 
@@ -250,61 +112,35 @@ public class SkeletonScriptGraphicsContext extends ScriptGraphicsContext {
                     ImGui.SeparatorText("Food/Prayer Options");
                     script.useSaraBrew = ImGui.Checkbox("Drink Saradomin Brew", script.useSaraBrew);
                     if (ImGui.IsItemHovered()) {
-                        ImGui.SetTooltip("Have in Backpack.");
+                        ImGui.SetTooltip("Have in Backpack");
                     }
                     script.useSaraBrewandBlubber = ImGui.Checkbox("Drink Saradomin Brew and Blubber", script.useSaraBrewandBlubber);
                     if (ImGui.IsItemHovered()) {
-                        ImGui.SetTooltip("Have in Backpack.");
+                        ImGui.SetTooltip("Have in Backpack");
                     }
                     script.eatFood = ImGui.Checkbox("Eat Food", script.eatFood);
-                    if (ImGui.IsItemHovered()) {
-                        ImGui.SetTooltip("Have in Backpack.");
-                    }
-                    ImGui.SetItemWidth(40);
-                    healthThresholdStr = ImGui.InputText("Health Threshold (%)", healthThresholdStr);
-                    if (ImGui.IsItemHovered()) {
-                        ImGui.SetTooltip("Health % to eat at.");
-                    }
+                    ImGui.SetItemWidth(150.0F);
                     ImGui.SameLine();
-                    if (ImGui.Button("Set Health Threshold")) {
-                        try {
-                            int newHealthThreshold = Integer.parseInt(healthThresholdStr.trim());
-                            if (newHealthThreshold >= 0 && newHealthThreshold <= 100) {
-                                script.setHealthThreshold(newHealthThreshold);
-                                healthFeedbackMessage = "Health Threshold updated successfully to: " + newHealthThreshold;
-                            } else {
-                                healthFeedbackMessage = "Entered value must be within 0-100.";
-                            }
-                        } catch (NumberFormatException e) {
-                            healthFeedbackMessage = "Invalid number format for Health Threshold.";
-                        }
+                    SkeletonScript.healthThreshold = ImGui.InputInt("Health % Threshold", SkeletonScript.healthThreshold);
+                    if (ImGui.IsItemHovered()) {
+                        ImGui.SetTooltip("Health % to eat at");
                     }
-                    if (!healthFeedbackMessage.isEmpty()) {
-                        ImGui.Text(healthFeedbackMessage);
+                    if (SkeletonScript.healthThreshold < 0) {
+                        SkeletonScript.healthThreshold = 0;
+                    } else if (SkeletonScript.healthThreshold > 100) {
+                        SkeletonScript.healthThreshold = 100;
                     }
                     script.useprayer = ImGui.Checkbox("Use Prayer/Restore Pots/Flasks", script.useprayer);
-                    ImGui.SetItemWidth(60);
-                    prayerPointsThresholdStr = ImGui.InputText("Prayer Points Threshold", prayerPointsThresholdStr);
+                    ImGui.SetItemWidth(150.0F);
+                    ImGui.SameLine();
+                    SkeletonScript.prayerPointsThreshold = ImGui.InputInt("Prayer Point Threshold", SkeletonScript.prayerPointsThreshold);
                     if (ImGui.IsItemHovered()) {
                         ImGui.SetTooltip("Prayer points to drink at. `5000 = 500`");
                     }
-                    ImGui.SameLine();
-
-                    if (ImGui.Button("Set Prayer Threshold")) {
-                        try {
-                            int newThreshold = Integer.parseInt(prayerPointsThresholdStr.trim());
-                            if (newThreshold >= 0) {
-                                script.setPrayerPointsThreshold(newThreshold);
-                                prayerFeedbackMessage = "Threshold updated successfully to: " + newThreshold;
-                            } else {
-                                prayerFeedbackMessage = "Entered value must be non-negative.";
-                            }
-                        } catch (NumberFormatException e) {
-                            prayerFeedbackMessage = "Invalid number format.";
-                        }
-                    }
-                    if (!prayerFeedbackMessage.isEmpty()) {
-                        ImGui.Text(prayerFeedbackMessage);
+                    if (SkeletonScript.prayerPointsThreshold < 0) {
+                        SkeletonScript.prayerPointsThreshold = 0;
+                    } else if (SkeletonScript.prayerPointsThreshold > 9900) {
+                        SkeletonScript.prayerPointsThreshold = 9900;
                     }
                     ImGui.SeparatorText("Offensive Options");
 
@@ -316,7 +152,7 @@ public class SkeletonScriptGraphicsContext extends ScriptGraphicsContext {
                     ImGui.SameLine();
                     SkeletonScript.NecrosisStacksThreshold = ImGui.InputInt("Necrosis Stacks Threshold (0-12)", SkeletonScript.NecrosisStacksThreshold);
                     if (ImGui.IsItemHovered()) {
-                        ImGui.SetTooltip("Stacks to cast at.");
+                        ImGui.SetTooltip("Stacks to cast at");
                     }
                     if (SkeletonScript.NecrosisStacksThreshold < 0) {
                         SkeletonScript.NecrosisStacksThreshold = 0;
@@ -329,61 +165,60 @@ public class SkeletonScriptGraphicsContext extends ScriptGraphicsContext {
                     }
                     ImGui.SetItemWidth(110.0F);
                     ImGui.SameLine();
-// Display and allow the user to modify the VolleyOfSoulsThreshold
                     SkeletonScript.VolleyOfSoulsThreshold = ImGui.InputInt("Volley of Souls Threshold (0-5)", SkeletonScript.VolleyOfSoulsThreshold);
                     if (ImGui.IsItemHovered()) {
-                        ImGui.SetTooltip("Stacks to cast at.");
+                        ImGui.SetTooltip("Stacks to cast at");
                     }
                     if (SkeletonScript.VolleyOfSoulsThreshold < 0) {
-                        SkeletonScript.VolleyOfSoulsThreshold = 0; // Ensure threshold does not go below 0
+                        SkeletonScript.VolleyOfSoulsThreshold = 0;
                     } else if (SkeletonScript.VolleyOfSoulsThreshold > 5) {
-                        SkeletonScript.VolleyOfSoulsThreshold = 5; // Ensure threshold does not exceed 5
+                        SkeletonScript.VolleyOfSoulsThreshold = 5;
                     }
                     script.Essence = ImGui.Checkbox("OmniGuard Special Attack", script.Essence);
                     if (ImGui.IsItemHovered()) {
-                        ImGui.SetTooltip("Have on Action Bar.");
+                        ImGui.SetTooltip("Have on Action Bar");
                     }
 
                     script.UseVulnBomb = ImGui.Checkbox("Use Vulnerability Bomb", script.UseVulnBomb);
                     if (ImGui.IsItemHovered()) {
-                        ImGui.SetTooltip("Have on Action Bar.");
+                        ImGui.SetTooltip("Have on Action Bar");
                     }
                     script.UseSmokeBomb = ImGui.Checkbox("Use Smoke Cloud", script.UseSmokeBomb);
                     if (ImGui.IsItemHovered()) {
-                        ImGui.SetTooltip("Have on Action Bar.");
+                        ImGui.SetTooltip("Have on Action Bar");
                     }
                     script.InvokeDeath = ImGui.Checkbox("Use Invoke Death", script.InvokeDeath);
                     if (ImGui.IsItemHovered()) {
-                        ImGui.SetTooltip("Have on Action Bar.");
+                        ImGui.SetTooltip("Have on Action Bar");
                     }
                     ImGui.SeparatorText("Defensive Options");
                     script.useoverload = ImGui.Checkbox("Use Overloads", script.useoverload);
                     if (ImGui.IsItemHovered()) {
-                        ImGui.SetTooltip("Have in Backpack.");
+                        ImGui.SetTooltip("Have in Backpack");
                     }
                     script.usedarkness = ImGui.Checkbox("Use Darkness", script.usedarkness);
                     if (ImGui.IsItemHovered()) {
-                        ImGui.SetTooltip("Have on Action Bar.");
+                        ImGui.SetTooltip("Have on Action Bar");
                     }
                     script.UseSoulSplit = ImGui.Checkbox("Use Soul Split in Combat", script.UseSoulSplit);
                     if (ImGui.IsItemHovered()) {
-                        ImGui.SetTooltip("Have on Action Bar.");
+                        ImGui.SetTooltip("Have on Action Bar");
                     }
                     script.quickprayer = ImGui.Checkbox("Use Quick Prayer 1 in Combat", script.quickprayer);
                     if (ImGui.IsItemHovered()) {
-                        ImGui.SetTooltip("Have on Action Bar.");
+                        ImGui.SetTooltip("Have on Action Bar");
                     }
                     script.useExcalibur = ImGui.Checkbox("Use Excalibur", script.useExcalibur);
                     if (ImGui.IsItemHovered()) {
-                        ImGui.SetTooltip("Have in Backpack.");
+                        ImGui.SetTooltip("Have in Backpack");
                     }
                     script.useAncientElven = ImGui.Checkbox("Use Ancient Elven Ritual Shard", script.useAncientElven);
                     if (ImGui.IsItemHovered()) {
-                        ImGui.SetTooltip("Have in Backpack.");
+                        ImGui.SetTooltip("Have in Backpack");
                     }
                     script.useWeaponPoison = ImGui.Checkbox("Use Weapon Poison", script.useWeaponPoison);
                     if (ImGui.IsItemHovered()) {
-                        ImGui.SetTooltip("Have in Backpack.");
+                        ImGui.SetTooltip("Have in Backpack");
                     }
                     ImGui.SeparatorText("Teleport Options");
                     script.teleportToWarOnHealth = ImGui.Checkbox("Teleport to War's Retreat on Low Health", script.teleportToWarOnHealth);
@@ -428,11 +263,55 @@ public class SkeletonScriptGraphicsContext extends ScriptGraphicsContext {
                     } else if (script.UseScriptureOfFul) {
                         script.UseScriptureOfFul = false;
                     }
+                    long elapsedTimeMillis = System.currentTimeMillis() - this.scriptStartTime;
+                    long elapsedSeconds = elapsedTimeMillis / 1000L;
+                    long hours = elapsedSeconds / 3600L;
+                    long minutes = elapsedSeconds % 3600L / 60L;
+                    long seconds = elapsedSeconds % 60L;
+                    String displayTimeRunning = String.format("%02d:%02d:%02d", hours, minutes, seconds);
+                    ImGui.SeparatorText("Time Running  " + displayTimeRunning);
+
+                    ImGui.EndTabItem();
+                }
+                if (ImGui.BeginTabItem("Loot Options", ImGuiWindowFlag.None.getValue())) {
                     ImGui.SeparatorText("Loot Options");
-                    script.useLoot = ImGui.Checkbox("Use Loot", script.useLoot);
-                    if (ImGui.IsItemHovered()) {
-                        ImGui.SetTooltip("All options in area loot must be turned off, will pick up items under a loot beam automatically without being on list.");
+                    // Use Single Loot Checkbox
+                    boolean tempUseLoot = script.useLoot;
+                    script.useLoot = ImGui.Checkbox("Use Single Loot", script.useLoot);
+                    if (script.useLoot && script.useLoot != tempUseLoot) {
+                        script.useLootInterface = false;
+                        script.InteractWithLootAll = false;
                     }
+                    if (ImGui.IsItemHovered()) {
+                        ImGui.SetTooltip("All options in area loot settings must be turned off, will pick up items under a loot beam automatically without being on list.");
+                    }
+
+                    ImGui.SameLine();
+
+// Use Loot Interface Checkbox
+                    boolean tempUseLootInterface = script.useLootInterface;
+                    script.useLootInterface = ImGui.Checkbox("Use Loot Interface", script.useLootInterface);
+                    if (script.useLootInterface && script.useLootInterface != tempUseLootInterface) {
+                        script.useLoot = false;
+                        script.InteractWithLootAll = false;
+                    }
+                    if (ImGui.IsItemHovered()) {
+                        ImGui.SetTooltip("Will open loot interface to loot items on the list below.");
+                    }
+
+                    ImGui.SameLine();
+
+// Loot All Checkbox
+                    boolean tempInteractWithLootAll = script.InteractWithLootAll;
+                    script.InteractWithLootAll = ImGui.Checkbox("Loot All", script.InteractWithLootAll);
+                    if (script.InteractWithLootAll && script.InteractWithLootAll != tempInteractWithLootAll) {
+                        script.useLoot = false;
+                        script.useLootInterface = false;
+                    }
+                    if (ImGui.IsItemHovered()) {
+                        ImGui.SetTooltip("Will interact with Loot All button in loot interface for ALL loot.");
+                    }
+
                     ImGui.SeparatorText("Items to Pickup");
 
                     this.selectedItem = ImGui.InputText("Item name", this.selectedItem);
@@ -451,22 +330,26 @@ public class SkeletonScriptGraphicsContext extends ScriptGraphicsContext {
 
                     if (!this.script.getTargetItemNames().isEmpty()) {
                         if (ImGui.BeginChild("Items List", 0, 100, true, 0)) {
-                            boolean firstItem = true;
+                            int itemsPerLine = 6;
+                            int itemCount = 0; // Counter for items displayed so far
+
                             for (String itemName : new ArrayList<>(this.script.getTargetItemNames())) {
-                                if (!firstItem) {
+                                if (itemCount % itemsPerLine != 0) {
                                     ImGui.SameLine();
                                 }
-                                firstItem = false;
 
                                 if (ImGui.Button(itemName)) {
                                     this.script.println("Removing \"" + itemName + "\" from target items.");
                                     this.script.removeItemName(itemName);
-                                    break;
+                                    // Depending on your logic, you may want to break here,
+                                    // but be cautious of concurrent modification issues.
                                 }
 
                                 if (ImGui.IsItemHovered()) {
                                     ImGui.SetTooltip("Click to remove");
                                 }
+
+                                itemCount++;
                             }
                         }
                         ImGui.EndChild();
@@ -501,7 +384,7 @@ public class SkeletonScriptGraphicsContext extends ScriptGraphicsContext {
 
                                 if (ImGui.Button(targetName)) {
                                     script.removeTargetName(targetName);
-                                    break; // Exit the loop to avoid concurrent modification issues
+                                    break;
                                 }
                                 if (ImGui.IsItemHovered()) {
                                     ImGui.SetTooltip("Click to remove this target");
@@ -510,16 +393,43 @@ public class SkeletonScriptGraphicsContext extends ScriptGraphicsContext {
                         }
                         ImGui.EndChild();
                     }
+                    // ImGui Separator for visual distinction
+                    ImGui.Separator();
+                    ImGui.SeparatorText("Use Items on Magic Notepaper");
+                    ImGui.SetItemWidth(250f);
+                    script.Notepaper = ImGui.Checkbox("Use Magic Notepaper", script.Notepaper);
+                    this.selectedItemToUseOnNotepaper = ImGui.InputText("Item name to use on Notepaper", this.selectedItemToUseOnNotepaper);
 
+// Button to add the item to the list
+                    if (ImGui.Button("Add Item to Notepaper List") && !this.selectedItemToUseOnNotepaper.isEmpty()) {
+                        if (!this.script.getItemNamesToUseOnNotepaper().contains(this.selectedItemToUseOnNotepaper)) {
+                            this.script.addItemNameToUseOnNotepaper(this.selectedItemToUseOnNotepaper);
+                            this.selectedItemToUseOnNotepaper = ""; // Clear the input field after adding
+                        }
+                    }
 
-                    long elapsedTimeMillis = System.currentTimeMillis() - this.scriptStartTime;
-                    long elapsedSeconds = elapsedTimeMillis / 1000L;
-                    long hours = elapsedSeconds / 3600L;
-                    long minutes = elapsedSeconds % 3600L / 60L;
-                    long seconds = elapsedSeconds % 60L;
-                    String displayTimeRunning = String.format("%02d:%02d:%02d", hours, minutes, seconds);
-                    ImGui.SeparatorText("Time Running  " + displayTimeRunning);
+// Display the list of items to use on Magic Notepaper within a scrollable child window
+                    if (!this.script.getItemNamesToUseOnNotepaper().isEmpty()) {
+                        if (ImGui.BeginChild("Items to Use on Notepaper List", 0, 100, true, ImGuiWindowFlag.None.getValue())) {
+                            int itemCount = 0;
+                            for (String itemName : new ArrayList<>(this.script.getItemNamesToUseOnNotepaper())) {
+                                if (itemCount % 6 != 0) {
+                                    ImGui.SameLine();
+                                }
+                                itemCount++;
 
+                                if (ImGui.Button(itemName)) {
+                                    this.script.removeItemNameToUseOnNotepaper(itemName);
+                                    break;
+                                }
+
+                                if (ImGui.IsItemHovered()) {
+                                    ImGui.SetTooltip("Click to remove this item from the list");
+                                }
+                            }
+                        }
+                        ImGui.EndChild();
+                    }
                     ImGui.EndTabItem();
                 }
                 if (ImGui.BeginTabItem("Logout Timer Setup", ImGuiWindowFlag.None.getValue())) {
@@ -538,7 +448,7 @@ public class SkeletonScriptGraphicsContext extends ScriptGraphicsContext {
                                 logoutFeedbackMessage = "Please enter a valid positive number for hours and minutes.";
                             } else {
                                 long currentTimeMillis = System.currentTimeMillis();
-                                long calculatedTargetLogoutTimeMillis = currentTimeMillis + hours * 3600000 + minutes * 60000;
+                                long calculatedTargetLogoutTimeMillis = currentTimeMillis + hours * 3600000L + minutes * 60000L;
                                 script.setTargetLogoutTimeMillis(calculatedTargetLogoutTimeMillis);
                                 logoutFeedbackMessage = String.format("Logout timer set for %d hours and %d minutes from now.", hours, minutes);
                             }
@@ -564,31 +474,80 @@ public class SkeletonScriptGraphicsContext extends ScriptGraphicsContext {
 
                     ImGui.EndTabItem();
                 }
-                if (ImGui.BeginTabItem("Misc Options", ImGuiWindowFlag.None.getValue())) {
-                    ImGui.SeparatorText("Skilling Potions");
+                if (ImGui.BeginTabItem("World Hopper", ImGuiWindowFlag.None.getValue())) {
+                    script.HopWorlds = ImGui.Checkbox("Use World Hopper", script.HopWorlds);
+                    if (ImGui.IsItemHovered()) {
+                        ImGui.SetTooltip("You CANNOT switch worlds in certain situations, i suggest you manually try whilst doing the activity your doing e.g. inside boss instance");
+                    }
+                    long timeRemaining = nextWorldHopTime - System.currentTimeMillis();
+                    if(timeRemaining > 0) {
+                        String remainingTimeFormatted = formatTimeRemaining(timeRemaining);
+                        ImGui.Text("Next hop in: " + remainingTimeFormatted);
+                    } else {
+                        ImGui.Text("Ready to hop worlds...");
+                    }
+                    // Inside the drawSettings() method
+                    ImGui.Text("World Hop Settings:");
+                    minHopIntervalMinutes = ImGui.InputInt("Min Hop Interval (Minutes)", minHopIntervalMinutes);
+                    if (minHopIntervalMinutes < 1) { // Minimum 1 minute
+                        minHopIntervalMinutes = 1;
+                    } else if (minHopIntervalMinutes > maxHopIntervalMinutes) { // Ensure min is not more than max
+                        minHopIntervalMinutes = maxHopIntervalMinutes;
+                    }
 
+                    maxHopIntervalMinutes = ImGui.InputInt("Max Hop Interval (Minutes)", maxHopIntervalMinutes);
+                    if (maxHopIntervalMinutes < minHopIntervalMinutes) { // Ensure max is not less than min
+                        maxHopIntervalMinutes = minHopIntervalMinutes;
+                    } else if (maxHopIntervalMinutes > 300) { // Set an upper limit, for example, 300 minutes
+                        maxHopIntervalMinutes = 300;
+                    }
+
+                    if (ImGui.IsItemHovered()) {
+                        ImGui.SetTooltip("Set the minimum and maximum intervals for hopping worlds. The script will select a random time between these two values for each hop.");
+                    }
+                    ImGui.EndTabItem();
+                }
+                if (ImGui.BeginTabItem("Misc Options", ImGuiWindowFlag.None.getValue())) {
                     script.useLightForm = ImGui.Checkbox("Use Light Form", script.useLightForm);
-                    ImGui.PushStyleColor(0, RGBToFloat(134), RGBToFloat(136), RGBToFloat(138), 1.0f); //text colour
-                    ImGui.SameLine();
-                    ImGui.Text("Have on action bar");
-                    ImGui.PopStyleColor(1);
+                    if (ImGui.IsItemHovered()) {
+                        ImGui.SetTooltip("Have on Action Bar");
+                    }
                     script.useCrystalMask = ImGui.Checkbox("Use Crystal Mask", script.useCrystalMask);
-                    ImGui.PushStyleColor(0, RGBToFloat(134), RGBToFloat(136), RGBToFloat(138), 1.0f); //text colour
-                    ImGui.SameLine();
-                    ImGui.Text("Have on action bar");
-                    ImGui.PopStyleColor(1);
+                    if (ImGui.IsItemHovered()) {
+                        ImGui.SetTooltip("Have on Action Bar");
+                    }
                     script.useSuperheatForm = ImGui.Checkbox("Use Superheat Form", script.useSuperheatForm);
-                    ImGui.PushStyleColor(0, RGBToFloat(134), RGBToFloat(136), RGBToFloat(138), 1.0f); //text colour
-                    ImGui.SameLine();
-                    ImGui.Text("Have on action bar");
-                    ImGui.PopStyleColor(1);
+                    if (ImGui.IsItemHovered()) {
+                        ImGui.SetTooltip("Have on Action Bar");
+                    }
                     script.useNecromancyPotion = ImGui.Checkbox("Use Necromancy Potion", script.useNecromancyPotion);
-                    ImGui.PushStyleColor(0, RGBToFloat(134), RGBToFloat(136), RGBToFloat(138), 1.0f); //text colour
-                    ImGui.SameLine();
-                    ImGui.Text("Use any variant of >necromancy< potions/flasks etc");
-                    ImGui.PopStyleColor(1);
+                    if (ImGui.IsItemHovered()) {
+                        ImGui.SetTooltip("Use any variant of >necromancy< potions/flasks etc, doesnt need to be on action bar");
+                    }
+                    script.usePenance = ImGui.Checkbox("Use Powder of Penance", script.usePenance);
+                    if (ImGui.IsItemHovered()) {
+                        ImGui.SetTooltip("Doesn't need to be on action bar");
+                    }
+                    script.useProtection = ImGui.Checkbox("Use Powder of Protection", script.useProtection);
+                    if (ImGui.IsItemHovered()) {
+                        ImGui.SetTooltip("Doesn't need to be on action bar");
+                    }
+                    script.useAntifire = ImGui.Checkbox("Use Antifire variant", script.useAntifire);
+                    if (ImGui.IsItemHovered()) {
+                        ImGui.SetTooltip("Doesn't need to be on action bar");
+                    }
+                    script.useaggression = ImGui.Checkbox("Use Aggression Flask", script.useaggression);
+                    if (ImGui.IsItemHovered()) {
+                        ImGui.SetTooltip("Doesn't need to be on action bar");
+                    }
                     script.useHunter = ImGui.Checkbox("Use Extreme Hunter Potion", script.useHunter);
+                    if (ImGui.IsItemHovered()) {
+                        ImGui.SetTooltip("Doesn't need to be on action bar");
+                    }
                     script.usedivination = ImGui.Checkbox("Use Extreme Divination Potion", script.usedivination);
+                    if (ImGui.IsItemHovered()) {
+                        ImGui.SetTooltip("Doesn't need to be on action bar");
+                    }
                     script.usecooking = ImGui.Checkbox("Use Extreme Cooking Potion", script.usecooking);
                     ImGui.SeparatorText("Dummy Options");
                     ImGui.PushStyleColor(0, RGBToFloat(134), RGBToFloat(136), RGBToFloat(138), 1.0f); //text colour
@@ -599,196 +558,7 @@ public class SkeletonScriptGraphicsContext extends ScriptGraphicsContext {
                     script.useMagicDummy = ImGui.Checkbox("Use Magic Dummy", script.useMagicDummy);
                     script.useAgilityDummy = ImGui.Checkbox("Use Agility Dummy", script.useAgilityDummy);
                     script.useThievingDummy = ImGui.Checkbox("Use Thieving Dummy", script.useThievingDummy);
-                    script.KwuarmIncence = ImGui.Checkbox("Use Kwuarm Incense Sticks", script.KwuarmIncence);
-                    if (script.KwuarmIncence) {
-                        ImGui.SameLine();
-                        script.overloadEnabled = ImGui.Checkbox("Overload?", script.overloadEnabled);
-                    }
-
-// For Torstol Incense
-                    script.TorstolIncence = ImGui.Checkbox("Use Torstol Incense Sticks", script.TorstolIncence);
-                    if (script.TorstolIncence) {
-                        ImGui.SameLine();
-                        script.overloadEnabled = ImGui.Checkbox("Overload?", script.overloadEnabled);
-                    }
-
-// For Lantadyme Incense
-                    script.LantadymeIncence = ImGui.Checkbox("Use Lantadyme Incense Sticks", script.LantadymeIncence);
-                    if (script.LantadymeIncence) {
-                        ImGui.SameLine();
-                        script.overloadEnabled = ImGui.Checkbox("Overload?", script.overloadEnabled);
-                    }
-                    script.usePenance = ImGui.Checkbox("Use Powder of Penance", script.usePenance);
-                    script.useProtection = ImGui.Checkbox("Use Powder of Protection", script.useProtection);
-                    script.useAntifire = ImGui.Checkbox("Use Antifire variant", script.useAntifire);
-                    script.useaggression = ImGui.Checkbox("Use Aggression Flask", script.useaggression);
-                    ImGui.EndTabItem();
-                }
-
-
-                if (ImGui.BeginTabItem("Combat Statistics", ImGuiWindowFlag.None.getValue())) {
-                    showAttackStats = ImGui.Checkbox("Show Attack Stats", showAttackStats);
-                    if (showAttackStats) {
-                        // Display Attack Stats right underneath the checkbox
-                        displayStatsForSkill(Skills.ATTACK, "Attack", startingAttackLevel, startingAttackXP);
-                    }
-
-                    showStrengthStats = ImGui.Checkbox("Show Strength Stats", showStrengthStats);
-                    if (showStrengthStats) {
-                        // Display Strength Stats right underneath the checkbox
-                        displayStatsForSkill(Skills.STRENGTH, "Strength", startingStrengthLevel, startingStrengthXP);
-                    }
-
-                    showDefenseStats = ImGui.Checkbox("Show Defence Stats", showDefenseStats);
-                    if (showDefenseStats) {
-                        // Display Defence Stats right underneath the checkbox
-                        displayStatsForSkill(Skills.DEFENSE, "Defence", startingDefenseLevel, startingDefenseXP);
-                    }
-
-                    showRangedStats = ImGui.Checkbox("Show Ranged Stats", showRangedStats);
-                    if (showRangedStats) {
-                        // Display Ranged Stats right underneath the checkbox
-                        displayStatsForSkill(Skills.RANGED, "Ranged", startingRangedLevel, startingRangedXP);
-                    }
-
-                    showPrayerStats = ImGui.Checkbox("Show Prayer Stats", showPrayerStats);
-                    if (showPrayerStats) {
-                        // Display Prayer Stats right underneath the checkbox
-                        displayStatsForSkill(Skills.PRAYER, "Prayer", startingPrayerLevel, startingPrayerXP);
-                    }
-
-                    showMagicStats = ImGui.Checkbox("Show Magic Stats", showMagicStats);
-                    if (showMagicStats) {
-                        // Display Magic Stats right underneath the checkbox
-                        displayStatsForSkill(Skills.MAGIC, "Magic", startingMagicLevel, startingMagicXP);
-                    }
-
-                    showNecromancyStats = ImGui.Checkbox("Show Necromancy Stats", showNecromancyStats);
-                    if (showNecromancyStats) {
-                        // Display Necromancy Stats right underneath the checkbox
-                        displayStatsForSkill(Skills.NECROMANCY, "Necromancy", startingNecromancyLevel, startingNecromancyXP);
-                    }
-                    showSummoningStats = ImGui.Checkbox("Show Summoning Stats", showSummoningStats);
-                    if (showSummoningStats) {
-                        // Display Summoning Stats right underneath the checkbox
-                        displayStatsForSkill(Skills.SUMMONING, "Summoning", startingSummoningLevel, startingSummoningXP);
-                    }
-                    showConstitutionStats = ImGui.Checkbox("Show Constitution Stats", showConstitutionStats);
-                    if (showConstitutionStats) {
-                        // Display Constitution Stats right underneath the checkbox
-                        displayStatsForSkill(Skills.CONSTITUTION, "Constitution", startingConstitutionLevel, startingConstitutionXP);
-                    }
-
-                    ImGui.EndTabItem();
-                }
-                if (ImGui.BeginTabItem("Gathering Statistics", ImGuiWindowFlag.None.getValue())) {
-                    showMiningStats = ImGui.Checkbox("Show Mining Stats", showMiningStats);
-                    if (showMiningStats) {
-                        // Display Mining Stats right underneath the checkbox
-                        displayStatsForSkill(Skills.MINING, "Mining", startingMiningLevel, startingMiningXP);
-                    }
-                    showFishingStats = ImGui.Checkbox("Show Fishing Stats", showFishingStats);
-                    if (showFishingStats) {
-                        // Display Fishing Stats right underneath the checkbox
-                        displayStatsForSkill(Skills.FISHING, "Fishing", startingFishingLevel, startingFishingXP);
-                    }
-                    showWoodcuttingStats = ImGui.Checkbox("Show Woodcutting Stats", showWoodcuttingStats);
-                    if (showWoodcuttingStats) {
-                        // Display Woodcutting Stats right underneath the checkbox
-                        displayStatsForSkill(Skills.WOODCUTTING, "Woodcutting", startingWoodcuttingLevel, startingWoodcuttingXP);
-                    }
-                    showFarmingStats = ImGui.Checkbox("Show Farming Stats", showFarmingStats);
-                    if (showFarmingStats) {
-                        // Display Farming Stats right underneath the checkbox
-                        displayStatsForSkill(Skills.FARMING, "Farming", startingFarmingLevel, startingFarmingXP);
-                    }
-                    showDivinationStats = ImGui.Checkbox("Show Divination Stats", showDivinationStats);
-                    if (showDivinationStats) {
-                        // Display Divination Stats right underneath the checkbox
-                        displayStatsForSkill(Skills.DIVINATION, "Divination", startingDivinationLevel, startingDivinationXP);
-                    }
-                    showHunterStats = ImGui.Checkbox("Show Hunter Stats", showHunterStats);
-                    if (showHunterStats) {
-                        // Display Hunter Stats right underneath the checkbox
-                        displayStatsForSkill(Skills.HUNTER, "Hunter", startingHunterLevel, startingHunterXP);
-                    }
-                    ImGui.EndTabItem();
-                }
-
-                if (ImGui.BeginTabItem("Artisan Statistics", ImGuiWindowFlag.None.getValue())) {
-                    showRunecraftingStats = ImGui.Checkbox("Show Runecrafting Stats", showRunecraftingStats);
-                    if (showRunecraftingStats) {
-                        // Display Runecrafting Stats right underneath the checkbox
-                        displayStatsForSkill(Skills.RUNECRAFTING, "Runecrafting", startingRunecraftingLevel, startingRunecraftingXP);
-                    }
-                    showConstructionStats = ImGui.Checkbox("Show Construction Stats", showConstructionStats);
-                    if (showConstructionStats) {
-                        // Display Construction Stats right underneath the checkbox
-                        displayStatsForSkill(Skills.CONSTRUCTION, "Construction", startingConstructionLevel, startingConstructionXP);
-                    }
-                    showCraftingStats = ImGui.Checkbox("Show Crafting Stats", showCraftingStats);
-                    if (showCraftingStats) {
-                        // Display Crafting Stats right underneath the checkbox
-                        displayStatsForSkill(Skills.CRAFTING, "Crafting", startingCraftingLevel, startingCraftingXP);
-                    }
-                    showFletchingStats = ImGui.Checkbox("Show Fletching Stats", showFletchingStats);
-                    if (showFletchingStats) {
-                        // Display Fletching Stats right underneath the checkbox
-                        displayStatsForSkill(Skills.FLETCHING, "Fletching", startingFletchingLevel, startingFletchingXP);
-                    }
-                    showSmithingStats = ImGui.Checkbox("Show Smithing Stats", showSmithingStats);
-                    if (showSmithingStats) {
-                        // Display Smithing Stats right underneath the checkbox
-                        displayStatsForSkill(Skills.SMITHING, "Smithing", startingSmithingLevel, startingSmithingXP);
-                    }
-                    showHerbloreStats = ImGui.Checkbox("Show Herblore Stats", showHerbloreStats);
-                    if (showHerbloreStats) {
-                        // Display Herblore Stats right underneath the checkbox
-                        displayStatsForSkill(Skills.HERBLORE, "Herblore", startingHerbloreLevel, startingHerbloreXP);
-                    }
-                    showFiremakingStats = ImGui.Checkbox("Show Firemaking Stats", showFiremakingStats);
-                    if (showFiremakingStats) {
-                        // Display Firemaking Stats right underneath the checkbox
-                        displayStatsForSkill(Skills.FIREMAKING, "Firemaking", startingFiremakingLevel, startingFiremakingXP);
-                    }
-                    showCookingStats = ImGui.Checkbox("Show Cooking Stats", showCookingStats);
-                    if (showCookingStats) {
-                        // Display Cooking Stats right underneath the checkbox
-                        displayStatsForSkill(Skills.COOKING, "Cooking", startingCookingLevel, startingCookingXP);
-                    }
-                    ImGui.EndTabItem();
-                }
-                if (ImGui.BeginTabItem("Support Statistics", ImGuiWindowFlag.None.getValue())) {
-                    showSlayerStats = ImGui.Checkbox("Show Slayer Stats", showSlayerStats);
-                    if (showSlayerStats) {
-                        // Display Slayer Stats right underneath the checkbox
-                        displayStatsForSkill(Skills.SLAYER, "Slayer", startingSlayerLevel, startingSlayerXP);
-                    }
-                    showThievingStats = ImGui.Checkbox("Show Thieving Stats", showThievingStats);
-                    if (showThievingStats) {
-                        // Display Thieving Stats right underneath the checkbox
-                        displayStatsForSkill(Skills.THIEVING, "Thieving", startingThievingLevel, startingThievingXP);
-                    }
-                    showAgilityStats = ImGui.Checkbox("Show Agility Stats", showAgilityStats);
-                    if (showAgilityStats) {
-                        // Display Agility Stats right underneath the checkbox
-                        displayStatsForSkill(Skills.AGILITY, "Agility", startingAgilityLevel, startingAgilityXP);
-                    }
-                    showDungeoneeringStats = ImGui.Checkbox("Show Dungeoneering Stats", showDungeoneeringStats);
-                    if (showDungeoneeringStats) {
-                        // Display Dungeoneering Stats right underneath the checkbox
-                        displayStatsForSkill(Skills.DUNGEONEERING, "Dungeoneering", startingDungeoneeringLevel, startingDungeoneeringXP);
-                    }
-                    showArchaeologyStats = ImGui.Checkbox("Show Archaeology Stats", showArchaeologyStats);
-                    if (showArchaeologyStats) {
-                        // Display Archaeology Stats right underneath the checkbox
-                        displayStatsForSkill(Skills.ARCHAEOLOGY, "Archaeology", startingArchaeologyLevel, startingArchaeologyXP);
-                    }
-                    showInventionStats = ImGui.Checkbox("Show Invention Stats", showInventionStats);
-                    if (showInventionStats) {
-                        // Display Invention Stats right underneath the checkbox
-                        displayStatsForSkill(Skills.INVENTION, "Invention", startingInventionLevel, startingInventionXP);
-                    }
+                    ImGui.SeparatorText("Miscellaneous Options");
                     ImGui.EndTabItem();
                 }
 
@@ -800,72 +570,15 @@ public class SkeletonScriptGraphicsContext extends ScriptGraphicsContext {
         ImGui.PopStyleVar(100);
         ImGui.PopStyleColor(100);
     }
-
     @Override
     public void drawOverlay() {
         super.drawOverlay();
     }
-    private String formatNumberForDisplay(double number) {
-        if (number < 1000) {
-            return String.format("%.0f", number); // No suffix
-        } else if (number < 1000000) {
-            return String.format("%.1fk", number / 1000); // Thousands
-        } else if (number < 1000000000) {
-            return String.format("%.1fM", number / 1000000); // Millions
-        } else {
-            return String.format("%.1fB", number / 1000000000); // Billions
-        }
-    }
-    private void displayStatsForSkill(Skills skill, String skillName, int startingLevel, int startingXP) {
-        int currentLevel = skill.getSkill().getLevel();
-        int levelsGained = currentLevel - startingLevel;
-        ImGui.Text("Current " + skillName + " Level: " + currentLevel + "  (" + levelsGained + " Gained)");
 
-        int currentXP = skill.getSkill().getExperience();
-        int xpForNextLevel = skill.getExperienceAt(currentLevel + 1);
-        int xpTillNextLevel = xpForNextLevel - currentXP;
-        ImGui.Text(skillName + " XP remaining: " + xpTillNextLevel);
-
-        displayXPGained(skill, startingXP);
-        displayXpPerHour(skill, startingXP);
-        String timeToLevelStr = calculateTimeTillNextLevel(skill, startingXP);
-        ImGui.Text(timeToLevelStr);
-    }
-
-    private void displayXPGained(Skills skill, int startingXP) {
-        int currentXP = skill.getSkill().getExperience();
-        int xpGained = currentXP - startingXP;
-        ImGui.Text("XP Gained: " + xpGained);
-    }
-
-    private void displayXpPerHour(Skills skill, int startingXP) {
-        long elapsedTime = System.currentTimeMillis() - scriptStartTime;
-        double hoursElapsed = elapsedTime / (1000.0 * 60 * 60);
-        int currentXP = skill.getSkill().getExperience();
-        int xpGained = currentXP - startingXP;
-        double xpPerHour = hoursElapsed > 0 ? xpGained / hoursElapsed : 0;
-        String formattedXpPerHour = formatNumberForDisplay(xpPerHour);
-        ImGui.Text("XP Per Hour: " + formattedXpPerHour);
-    }
-
-    private String calculateTimeTillNextLevel(Skills skill, int startingXP) {
-        int currentXP = skill.getSkill().getExperience();
-        int currentLevel = skill.getSkill().getLevel();
-        int xpForNextLevel = skill.getExperienceAt(currentLevel + 1);
-        int xpGained = currentXP - startingXP;
-        long timeElapsed = System.currentTimeMillis() - scriptStartTime;
-
-        if (xpGained > 0 && timeElapsed > 0) {
-            double xpPerMillisecond = xpGained / (double) timeElapsed;
-            long timeToLevelMillis = (long) ((xpForNextLevel - currentXP) / xpPerMillisecond);
-            long timeToLevelSecs = timeToLevelMillis / 1000;
-            long hours = timeToLevelSecs / 3600;
-            long minutes = (timeToLevelSecs % 3600) / 60;
-            long seconds = timeToLevelSecs % 60;
-
-            return String.format("Time remaining to next level: " + "%02d:%02d:%02d", hours, minutes, seconds);
-        } else {
-            return "Calculating time to next level...";
-        }
+    private String formatTimeRemaining(long millis) {
+        long minutes = (millis / 1000) / 60;
+        long seconds = (millis / 1000) % 60;
+        return String.format("%02d:%02d", minutes, seconds);
     }
 }
+// ImGui.Text("Use any variant of >necromancy< potions/flasks etc");
