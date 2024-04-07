@@ -31,6 +31,7 @@ public class SkeletonScriptGraphicsContext extends ScriptGraphicsContext {
     private String logoutMinutesStr = "0";
     private Instant startTime;
     private String logoutFeedbackMessage = "";
+    int oldAttackRadius = script.attackRadius;
 
     private static float RGBToFloat(int rgbValue) {
         return rgbValue / 255.0f;
@@ -313,7 +314,7 @@ public class SkeletonScriptGraphicsContext extends ScriptGraphicsContext {
                     }
 
                     ImGui.SeparatorText("Items to Pickup");
-
+                    ImGui.SetItemWidth(200.0F);
                     this.selectedItem = ImGui.InputText("Item name", this.selectedItem);
 
                     if (ImGui.Button("Add Item") && !this.selectedItem.isEmpty()) {
@@ -325,6 +326,11 @@ public class SkeletonScriptGraphicsContext extends ScriptGraphicsContext {
                     }
                     if (ImGui.IsItemHovered()) {
                         ImGui.SetTooltip("Can be part of the name, case insensitive. e.g. `char` will match all charms.");
+                    }
+                    ImGui.SameLine();
+                    script.buryBones = ImGui.Checkbox("Bury Bones", script.buryBones);
+                    if (ImGui.IsItemHovered()) {
+                        ImGui.SetTooltip("Will bury bones/Scatter ashes from backpack");
                     }
 
 
@@ -358,7 +364,27 @@ public class SkeletonScriptGraphicsContext extends ScriptGraphicsContext {
                     if (ImGui.IsItemHovered()) {
                         ImGui.SetTooltip("If enabled but no target input, will attack all targets nearby");
                     }
+                    ImGui.SameLine();
+// Assuming RadiusControl is an integer within your script representing the attack radius
+                    ImGui.SetItemWidth(120.0F);
+                    script.attackRadius = ImGui.InputInt("Attack Radius (1-25 tiles)", script.attackRadius);
+                    if (ImGui.IsItemHovered()) {
+                        ImGui.SetTooltip("Radius around the player to attack targets within");
+                    }
+
+// Ensure the attack radius is within the specified range
+                    if (script.attackRadius < 1) {
+                        script.attackRadius = 1;
+                    } else if (script.attackRadius > 25) {
+                        script.attackRadius = 25;
+                    }
+
+// Check if the attack radius has changed after GUI interaction
+                    if (script.attackRadius != oldAttackRadius) {
+                        ScriptConsole.println("Attack radius changed to: " + script.attackRadius);
+                    }
                     ImGui.SeparatorText("Attack Options");
+                    ImGui.SetItemWidth(200.0F);
                     this.targetName = ImGui.InputText("Target name", this.targetName);
 
 
@@ -371,6 +397,7 @@ public class SkeletonScriptGraphicsContext extends ScriptGraphicsContext {
                     if (ImGui.IsItemHovered()) {
                         ImGui.SetTooltip("Enter the name of the target to attack. Case-insensitive, partial names allowed.");
                     }
+                    ImGui.SetItemWidth(400.0F);
 
 // Display the list of targets with options to remove them
                     if (!script.getTargetNames().isEmpty()) {
@@ -396,8 +423,8 @@ public class SkeletonScriptGraphicsContext extends ScriptGraphicsContext {
                     // ImGui Separator for visual distinction
                     ImGui.Separator();
                     ImGui.SeparatorText("Use Items on Magic Notepaper");
-                    ImGui.SetItemWidth(250f);
                     script.Notepaper = ImGui.Checkbox("Use Magic Notepaper", script.Notepaper);
+                    ImGui.SetItemWidth(200.0F);
                     this.selectedItemToUseOnNotepaper = ImGui.InputText("Item name to use on Notepaper", this.selectedItemToUseOnNotepaper);
 
 // Button to add the item to the list

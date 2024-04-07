@@ -2,6 +2,9 @@ package net.botwithus;
 
 import net.botwithus.api.game.hud.inventories.Backpack;
 import net.botwithus.api.game.hud.inventories.Equipment;
+import net.botwithus.rs3.events.EventBus;
+import net.botwithus.rs3.events.impl.InventoryUpdateEvent;
+import net.botwithus.rs3.game.Distance;
 import net.botwithus.rs3.game.js5.types.vars.VarDomainType;
 import net.botwithus.rs3.game.minimenu.MiniMenu;
 import net.botwithus.internal.scripts.ScriptDefinition;
@@ -13,6 +16,8 @@ import net.botwithus.rs3.game.hud.interfaces.Component;
 import net.botwithus.rs3.game.hud.interfaces.Interfaces;
 import net.botwithus.rs3.game.js5.types.ItemType;
 import net.botwithus.rs3.game.minimenu.actions.ComponentAction;
+import net.botwithus.rs3.game.minimenu.actions.SelectableAction;
+import net.botwithus.rs3.game.movement.Movement;
 import net.botwithus.rs3.game.queries.builders.animations.SpotAnimationQuery;
 import net.botwithus.rs3.game.queries.builders.characters.NpcQuery;
 import net.botwithus.rs3.game.queries.builders.components.ComponentQuery;
@@ -37,14 +42,20 @@ import net.botwithus.rs3.util.Regex;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.*;
+import java.util.concurrent.ThreadLocalRandom;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 
 import static net.botwithus.rs3.game.Client.getLocalPlayer;
-import static net.botwithus.rs3.game.scene.entities.characters.player.LocalPlayer.LOCAL_PLAYER;
 
 public class SkeletonScript extends LoopingScript {
+    LocalPlayer Self = Client.getLocalPlayer();
+    public int attackRadius = 10;
+    boolean Notepaper;
+    boolean HopWorlds;
     boolean useThievingDummy;
+    private List<String> itemNamesToUseOnNotepaper = new ArrayList<>();
     boolean AttackaTarget;
     boolean Essence;
     boolean UseScriptureOfJas;
@@ -61,8 +72,8 @@ public class SkeletonScript extends LoopingScript {
     boolean useAncientElven;
     boolean useWeaponPoison;
     boolean useEssenceOfFinality;
-
-
+    boolean useLootInterface;
+    boolean InteractWithLootAll;
     boolean usePenance;
     boolean useProtection;
     boolean KwuarmIncence;
@@ -76,8 +87,8 @@ public class SkeletonScript extends LoopingScript {
     boolean useLoot;
     private boolean scriptRunning = false;
     long runStartTime;
-    private int prayerPointsThreshold = 5000;
-    private int healthThreshold = 50;
+    public static int prayerPointsThreshold = 5000;
+    public static int healthThreshold = 50;
     private Instant scriptStartTime;
     boolean teleportToWarOnHealth;
     boolean useSaraBrew;
@@ -96,165 +107,30 @@ public class SkeletonScript extends LoopingScript {
     boolean UseSmokeBomb;
     boolean UseVulnBomb;
     boolean InvokeDeath;
-    private int startingAttackLevel;
-    private int startingStrengthLevel;
-    private int startingDefenseLevel;
-    private int startingRangedLevel;
-    private int startingPrayerLevel;
-    private int startingMagicLevel;
-    private int startingRunecraftingLevel;
-    private int startingConstructionLevel;
-    private int startingDungeoneeringLevel;
-    private int startingArchaeologyLevel;
-    private int startingConstitutionLevel;
-    private int startingAgilityLevel;
-    private int startingHerbloreLevel;
-    private int startingThievingLevel;
-    private int startingCraftingLevel;
-    private int startingFletchingLevel;
-    private int startingSlayerLevel;
-    private int startingHunterLevel;
-    private int startingDivinationLevel;
-    private int startingNecromancyLevel;
-    private int startingMiningLevel;
-    private int startingSmithingLevel;
-    private int startingFishingLevel;
-    private int startingCookingLevel;
-    private int startingFiremakingLevel;
-    private int startingWoodcuttingLevel;
-    private int startingFarmingLevel;
-    private int startingSummoningLevel;
-    private int startingInventionLevel;
+    boolean buryBones;
 
-    public int getStartingAttackLevel() {
-        return startingAttackLevel;
-    }
-
-    public int getStartingStrengthLevel() {
-        return startingStrengthLevel;
-    }
-
-    public int getStartingDefenseLevel() {
-        return startingDefenseLevel;
-    }
-
-    public int getStartingRangedLevel() {
-        return startingRangedLevel;
-    }
-
-    public int getStartingPrayerLevel() {
-        return startingPrayerLevel;
-    }
-
-    public int getStartingMagicLevel() {
-        return startingMagicLevel;
-    }
-
-    public int getStartingRunecraftingLevel() {
-        return startingRunecraftingLevel;
-    }
-
-    public int getStartingConstructionLevel() {
-        return startingConstructionLevel;
-    }
-
-    public int getStartingDungeoneeringLevel() {
-        return startingDungeoneeringLevel;
-    }
-
-    public int getStartingArchaeologyLevel() {
-        return startingArchaeologyLevel;
-    }
-
-    public int getStartingConstitutionLevel() {
-        return startingConstitutionLevel;
-    }
-
-    public int getStartingAgilityLevel() {
-        return startingAgilityLevel;
-    }
-
-    public int getStartingHerbloreLevel() {
-        return startingHerbloreLevel;
-    }
-
-    public int getStartingThievingLevel() {
-        return startingThievingLevel;
-    }
-
-    public int getStartingCraftingLevel() {
-        return startingCraftingLevel;
-    }
-
-    public int getStartingFletchingLevel() {
-        return startingFletchingLevel;
-    }
-
-    public int getStartingSlayerLevel() {
-        return startingSlayerLevel;
-    }
-
-    public int getStartingHunterLevel() {
-        return startingHunterLevel;
-    }
-
-    public int getStartingDivinationLevel() {
-        return startingDivinationLevel;
-    }
-
-    public int getStartingNecromancyLevel() {
-        return startingNecromancyLevel;
-    }
-
-    public int getStartingMiningLevel() {
-        return startingMiningLevel;
-    }
-
-    public int getStartingSmithingLevel() {
-        return startingSmithingLevel;
-    }
-
-    public int getStartingFishingLevel() {
-        return startingFishingLevel;
-    }
-
-    public int getStartingCookingLevel() {
-        return startingCookingLevel;
-    }
-
-    public int getStartingFiremakingLevel() {
-        return startingFiremakingLevel;
-    }
-
-    public int getStartingWoodcuttingLevel() {
-        return startingWoodcuttingLevel;
-    }
-
-    public int getStartingFarmingLevel() {
-        return startingFarmingLevel;
-    }
-
-    public int getStartingSummoningLevel() {
-        return startingSummoningLevel;
-    }
-
-    public int getStartingInventionLevel() {
-        return startingInventionLevel;
-    }
+    static int[] membersWorlds = new int[]{
+            1, 2, 4, 5, 6, 9, 10, 12, 14, 15,
+            16, 21, 22, 23, 24, 25, 26, 27, 28, 31,
+            32, 35, 36, 37, 39, 40, 42, 44, 45, 46,
+            47, 49, 50, 51, 53, 54, 56, 58, 59, 60,
+            62, 63, 64, 65, 66, 67, 68, 69, 70, 71,
+            72, 73, 74, 75, 76, 77, 78, 79, 82, 83,
+            85, 87, 88, 89, 91, 92, 97, 98, 99, 100,
+            102, 103, 104, 105, 106, 116, 117, 118, 119, 121,
+            123, 124, 134, 138, 139, 140, 252, 257, 258};
 
 
     public SkeletonScript(String s, ScriptConfig scriptConfig, ScriptDefinition scriptDefinition) {
         super(s, scriptConfig, scriptDefinition);
         loadConfiguration();
         this.sgc = new SkeletonScriptGraphicsContext(getConsole(), this);
-        if (Client.getGameState() == Client.GameState.LOGGED_IN) {
-            setupStartingSkillLevels();
-        }
         super.initialize();
         this.isBackgroundScript = true;
         this.loopDelay = RandomGenerator.nextInt(1200, 1800);
         this.sgc = new SkeletonScriptGraphicsContext(getConsole(), this);
         this.runStartTime = System.currentTimeMillis();
+        subscribe(InventoryUpdateEvent.class, this::onInventoryUpdate);
     }
 
     public void startScript() {
@@ -271,6 +147,10 @@ public class SkeletonScript extends LoopingScript {
     public void stopScript() {
         if (scriptRunning) {
             scriptRunning = false;
+
+            // Unsubscribe from the event
+            unsubscribeFromInventoryUpdateEvent(); // This is a placeholder. Replace it with actual API call.
+
             Instant stopTime = Instant.now();
             println("Script stopped at: " + stopTime);
             long duration = Duration.between(scriptStartTime, stopTime).toMillis();
@@ -280,12 +160,34 @@ public class SkeletonScript extends LoopingScript {
         }
     }
 
+    private void unsubscribeFromInventoryUpdateEvent() {
+        unsubscribeAll();
+        // For example: eventManager.removeListener(this::onInventoryUpdate);
+    }
+
 
     @Override
     public void onLoop() {
         if (getLocalPlayer() != null && Client.getGameState() == Client.GameState.LOGGED_IN && !scriptRunning) {
             return;
         }
+        if (buryBones) {
+            handleBonesAndAshes();
+        }
+        if (HopWorlds) {
+            WorldHopper();
+        }
+        if (InteractWithLootAll)
+            LootEverything();
+
+        if (useLootInterface)
+            LootFromInterfaces();
+
+        if (Notepaper)
+            for (String itemName : getItemNamesToUseOnNotepaper()) {
+                useItemOnNotepaper(itemName);
+            }
+
         if (Essence)
             DeathEssence();
 
@@ -294,6 +196,7 @@ public class SkeletonScript extends LoopingScript {
 
         if (useLoot)
             loot();
+        retryCollection();
 
         if (Logout)
             checkAndPerformLogout();
@@ -342,9 +245,6 @@ public class SkeletonScript extends LoopingScript {
 
         if (useSaraBrewandBlubber)
             UseSaraandBlubber();
-
-        if (teleportToWarOnHealth)
-            TeleportToWarOnHealth();
 
         if (useThievingDummy)
             UseThievingDummy();
@@ -417,9 +317,45 @@ public class SkeletonScript extends LoopingScript {
 
         if (useEssenceOfFinality)
             essenceOfFinality();
+
         if (AttackaTarget)
             attackTarget();
     }
+
+    private void handleBonesAndAshes() {
+        // Flag to keep track if either bones or ashes were found and interacted with
+        boolean itemsHandled;
+
+        do {
+            itemsHandled = false;
+
+            // Query for items with "Bury" action (assuming these are bones)
+            ResultSet<Item> bones = InventoryItemQuery.newQuery(93).option("Bury").results();
+            if (!bones.isEmpty()) {
+                Item bone = bones.first();
+                assert bone != null;
+                Backpack.interact(bone.getName(), "Bury");
+                println("Burying " + bone.getName());
+                itemsHandled = true;
+                // Delay to simulate interaction time and recheck condition
+                Execution.delayUntil(RandomGenerator.nextInt(550, 650), () -> !Backpack.contains(bone.getName()));
+            }
+
+            // Query for items with "Scatter" action (assuming these are ashes)
+            ResultSet<Item> ashes = InventoryItemQuery.newQuery(93).option("Scatter").results();
+            if (!ashes.isEmpty()) {
+                Item ash = ashes.first();
+                assert ash != null;
+                Backpack.interact(ash.getName(), "Scatter");
+                println("Scattering " + ash.getName());
+                itemsHandled = true;
+                // Delay to simulate interaction time and recheck condition
+                Execution.delayUntil(RandomGenerator.nextInt(550, 650), () -> !Backpack.contains(ash.getName()));
+            }
+
+        } while (itemsHandled); // Continue if we handled either bones or ashes
+    }
+
     private List<String> targetNames = new ArrayList<>();
 
     public void addTargetName(String targetName) {
@@ -430,6 +366,96 @@ public class SkeletonScript extends LoopingScript {
         }
     }
 
+    private Integer pickedUpItemId = null;
+
+    private void onInventoryUpdate(InventoryUpdateEvent event) {
+        // Debug message to confirm the event triggers
+
+        Item newItem = event.getNewItem(); // Assuming this method gives you the newly added item
+        if (newItem != null) {
+            pickedUpItemId = newItem.getId(); // Capture the newly picked-up item's ID
+        }
+    }
+
+    public List<String> getItemNamesToUseOnNotepaper() {
+        return new ArrayList<>(itemNamesToUseOnNotepaper); // Return a copy to avoid external modification
+    }
+
+    public void addItemNameToUseOnNotepaper(String itemName) {
+        if (!itemNamesToUseOnNotepaper.contains(itemName)) {
+            itemNamesToUseOnNotepaper.add(itemName);
+        }
+    }
+
+    public void removeItemNameToUseOnNotepaper(String itemName) {
+        itemNamesToUseOnNotepaper.remove(itemName); // Assumes you're storing item names in lowercase for case-insensitive matching
+    }
+
+    public void useItemOnNotepaper(String itemName) {
+        if (pickedUpItemId == null) {
+            return;
+        }
+
+
+        Item targetItem = InventoryItemQuery.newQuery(93)
+                .name(itemName)
+                .results()
+                .stream()
+                .filter(item -> item.getId() == pickedUpItemId && item.getStackSize() == 1)
+                .findFirst()
+                .orElse(null);
+
+        if (targetItem == null) {
+            println(itemName + " matching the recent pickup criteria not found or it's already noted.");
+            return;
+        }
+
+        // Retrieve Magic Notepaper from the inventory
+        Item notepaper = InventoryItemQuery.newQuery(93)
+                .name("Magic notepaper")
+                .results()
+                .stream()
+                .findFirst()
+                .orElse(null);
+
+        if (notepaper == null) {
+            println("Magic Notepaper not found in inventory.");
+            return;
+        }
+
+        println("Found " + itemName + " and Magic Notepaper. Preparing to use.");
+
+        // Simulate 'Use' action on the target item
+        boolean itemSelected = MiniMenu.interact(SelectableAction.SELECTABLE_COMPONENT.getType(), 0, targetItem.getSlot(), 96534533);
+        Execution.delay(RandomGenerator.nextInt(500, 750));
+
+        if (itemSelected) {
+            println("Using " + itemName + " on Magic Notepaper...");
+
+            // Simulate 'Use' action on Magic Notepaper
+            boolean notepaperSelected = MiniMenu.interact(SelectableAction.SELECT_COMPONENT_ITEM.getType(), 0, notepaper.getSlot(), 96534533);
+            Execution.delay(RandomGenerator.nextInt(522, 787));
+
+            if (notepaperSelected) {
+                println(itemName + " successfully used on Magic Notepaper.");
+            } else {
+                println("Failed to use " + itemName + " on Magic Notepaper.");
+            }
+        } else {
+            println("Failed to select " + itemName + ".");
+        }
+    }
+
+    public int getAttackRadius() {
+        return attackRadius;
+    }
+
+    public void setAttackRadius(int attackRadius) {
+        this.attackRadius = Math.max(1, Math.min(attackRadius, 25)); // Ensure the radius is within 1 to 25 tiles
+        println("Attack radius set to: " + this.attackRadius); // Log the set attack radius
+    }
+
+
     public void removeTargetName(String targetName) {
         targetNames.remove(targetName.toLowerCase());
     }
@@ -437,30 +463,42 @@ public class SkeletonScript extends LoopingScript {
     public List<String> getTargetNames() {
         return new ArrayList<>(targetNames); // Return a copy to avoid modification
     }
-    private String targetName = "";
+    private static Coordinate initialPlayerCoord = null;
+    private long lastPrintTime = 0;
 
-
-    public void setTargetName(String targetName) {
-        println("Setting target name to: " + targetName);
-        this.targetName = targetName;
-    }
-
-    public void clearTargetName() {
-        this.targetName = "";
-    }
     private void attackTarget() {
-        if (getLocalPlayer() == null) {
+        if (Self == null) {
             return;
         }
 
-        List<String> excludedNameFragments = Arrays.asList("vengeful", "putrid", "skeleton", "ripper");
+        // Set the initial player coordinate if it hasn't been set
+        if (initialPlayerCoord == null) {
+            initialPlayerCoord = Self.getCoordinate();
+            println("Initial player coordinate set to: " + initialPlayerCoord);
+        }
+        long currentTime = System.currentTimeMillis();
+
+        // Check if 30 seconds have passed since the last print
+        if (currentTime - lastPrintTime >= 30000) { // 30000 milliseconds = 30 seconds
+            println("Attack radius = " + getAttackRadius() + " from initial coords: " + initialPlayerCoord);
+            lastPrintTime = currentTime; // Update the last print time
+        }
+        if (Self.getCoordinate().distanceTo(initialPlayerCoord) > getAttackRadius()) {
+            // Log the action of moving back to the initial position
+            println("Outside of attack radius, moving back to initial coordinates: " + initialPlayerCoord);
+            // Command to move the player back to the initial coordinates
+            Movement.walkTo(initialPlayerCoord.getRegionX(), initialPlayerCoord.getRegionY(), true);
+        }
+
         Npc targetNpc = null;
 
+        // Adjust to search within the specified radius from the initial player coordinate
         for (String target : targetNames) {
             String targetLower = target.toLowerCase();
             targetNpc = NpcQuery.newQuery().results().stream()
                     .filter(npc -> npc.getName().toLowerCase().contains(targetLower))
-                    .filter(npc -> excludedNameFragments.stream().noneMatch(excluded -> npc.getName().toLowerCase().contains(excluded)))
+                    .filter(npc -> npc.getOptions().contains("Attack"))
+                    .filter(npc -> npc.getCoordinate().distanceTo(initialPlayerCoord) <= getAttackRadius())
                     .findFirst()
                     .orElse(null);
 
@@ -469,32 +507,33 @@ public class SkeletonScript extends LoopingScript {
             }
         }
 
+        // Fallback to any attackable NPC within the radius from the initial player coordinate if no specific target is found
         if (targetNpc == null) {
             targetNpc = NpcQuery.newQuery().results().stream()
-                    .filter(npc -> excludedNameFragments.stream().noneMatch(excluded -> npc.getName().toLowerCase().contains(excluded)))
+                    .filter(npc -> npc.getOptions().contains("Attack"))
+                    .filter(npc -> npc.getCoordinate().distanceTo(initialPlayerCoord) <= getAttackRadius())
                     .min(Comparator.comparingInt(npc -> (int) npc.distanceTo(getLocalPlayer())))
                     .orElse(null);
         }
 
         if (waitingForAttackCompletion) {
-            if (System.currentTimeMillis() - lastAttackTime > 60000 || getLocalPlayer().getFollowing() == null) {
-                println("Attack completed or 20 seconds have passed.");
+            if (System.currentTimeMillis() - lastAttackTime > 60000 || !getLocalPlayer().hasTarget()) {
                 waitingForAttackCompletion = false; // Reset the flag
             } else {
                 return; // Still waiting, exit early
             }
         }
 
-        if (targetNpc != null) {
+        if (targetNpc != null && !getLocalPlayer().hasTarget() && targetNpc.getCurrentHealth() > 100) {
             println("Attacking " + targetNpc.getName());
             targetNpc.interact("Attack");
             lastAttackTime = System.currentTimeMillis();
             waitingForAttackCompletion = true; // Start waiting for completion
         }
     }
+
     private long lastAttackTime = -1; // -1 indicates no attack has been initiated
     private boolean waitingForAttackCompletion = false;
-
 
 
     private List<String> targetItemNames = new ArrayList<>();
@@ -525,6 +564,120 @@ public class SkeletonScript extends LoopingScript {
         collectAllTargetItems(targetItemNames);
     }
 
+    private void lootInterface() {
+        EntityResultSet<GroundItem> groundItems = GroundItemQuery.newQuery().results();
+        if (!scriptRunning) {
+            return;
+        }
+        if (groundItems.isEmpty()) {
+            return;
+        }
+
+        if (!groundItems.isEmpty() && !Backpack.isFull()) {
+            GroundItem groundItem = groundItems.nearest();
+            if (groundItem != null) {
+                groundItem.interact("Take");
+                Execution.delayUntil(RandomGenerator.nextInt(5000, 5500), () -> getLocalPlayer().isMoving());
+
+                if (getLocalPlayer().isMoving() && groundItem.getCoordinate() != null && Distance.between(getLocalPlayer().getCoordinate(), groundItem.getCoordinate()) > 10) {
+                    ScriptConsole.println("Used Surge: " + ActionBar.useAbility("Surge"));
+                    Execution.delay(RandomGenerator.nextInt(200, 250));
+                }
+
+                if (groundItem.getCoordinate() != null) {
+                    Execution.delayUntil(RandomGenerator.nextInt(100, 200), () -> Distance.between(getLocalPlayer().getCoordinate(), groundItem.getCoordinate()) <= 10);
+                }
+
+                if (groundItem.interact("Take")) {
+                    println("Taking " + groundItem.getName() + "...");
+                    Execution.delay(RandomGenerator.nextInt(600, 700));
+                }
+
+                boolean interfaceOpened = Execution.delayUntil(15000, () -> Interfaces.isOpen(1622));
+                if (!interfaceOpened) {
+                    println("Interface 1622 did not open. Attempting to interact with ground item again.");
+                    if (groundItem.interact("Take")) {
+                        println("Attempting to take " + groundItem.getName() + " again...");
+                        Execution.delay(RandomGenerator.nextInt(250, 300));
+                    }
+                }
+                LootAll();
+            }
+        }
+    }
+
+
+    private void LootAll() {
+        // First, check if there are any ground items to collect.
+        EntityResultSet<GroundItem> groundItems = GroundItemQuery.newQuery().results();
+        if (groundItems.isEmpty()) {
+            return; // Exit the method early if there are no items to loot.
+        }
+
+        // Proceed with the delay before interacting with the Loot All component.
+        Execution.delay(RandomGenerator.nextInt(1500, 2000));
+
+        ComponentQuery lootAllQuery = ComponentQuery.newQuery(1622);
+        List<Component> components = lootAllQuery.componentIndex(22).results().stream().toList();
+
+        if (!components.isEmpty() && components.get(0).interact(1)) {
+            println("Successfully interacted with Loot All.");
+            Execution.delay(RandomGenerator.nextInt(806, 1259));
+            // Additional logic here, if needed, after successful interaction.
+        }
+    }
+
+    private void LootEverything() {
+        if (InteractWithLootAll) {
+            if (Interfaces.isOpen(1622)) {
+                LootAll();
+            } else {
+                lootInterface();
+                Execution.delayUntil(10000, () -> Interfaces.isOpen(1622));
+            }
+        }
+    }
+
+    private void LootFromInterfaces() {
+        if (!scriptRunning) {
+            return;
+        }
+        if (Interfaces.isOpen(1622)) {
+            interactWithInventoryItems();
+        } else {
+            // If interface 1622 is not open, attempt to interact with ground items first.
+            List<String> availableItems = getAvailableItems();
+            for (String itemName : availableItems) {
+                if (targetItemNames.stream().anyMatch(targetItemName -> itemName.toLowerCase().contains(targetItemName.toLowerCase()))) {
+                    GroundItem groundItem = GroundItemQuery.newQuery().name(itemName).results().first();
+                    if (groundItem != null && groundItem.interact("Take")) {
+                        println("Interacted with: " + itemName + " on the ground as Loot interface is not open.");
+                        Execution.delayUntil(10000, () -> Interfaces.isOpen(1622));
+                        interactWithInventoryItems(); // Now, interact with the inventory items.
+                        break; // Assuming only one item needs interaction per loot action.
+                    }
+                }
+            }
+        }
+    }
+
+    private void interactWithInventoryItems() {
+        // Assuming 773 is the id for the inventory where items are to be interacted with.
+        InventoryItemQuery.newQuery(773).results().stream()
+                .filter(item -> targetItemNames.stream()
+                        .anyMatch(targetItemName -> item.getName().toLowerCase().contains(targetItemName.toLowerCase())))
+                .findFirst()
+                .ifPresent(item -> {
+                    int itemSlot = item.getSlot(); // Obtain the slot of the item.
+                    // Attempt to interact with the item using MiniMenu.
+                    if (MiniMenu.interact(ComponentAction.COMPONENT.getType(), 1, itemSlot, 106299403)) {
+                        println("Interacted with Loot Interface item: " + item.getName());
+                        Execution.delayUntil(5000, () -> !Interfaces.isOpen(1622)); // Adjust based on the action's completion.
+                        Execution.delay(RandomGenerator.nextInt(750, 1250));
+                    }
+                });
+    }
+
     private void collectAllTargetItems(List<String> targetKeywords) {
         List<String> availableItems = getAvailableItems();
         List<String> itemsToCollect = new ArrayList<>();
@@ -551,56 +704,106 @@ public class SkeletonScript extends LoopingScript {
         return items;
     }
 
+    private Set<String> itemsToRetry = new HashSet<>();
+    private long nextRetryTime = 0;
+
     private void collect(List<String> itemNames) {
+        if (System.currentTimeMillis() < nextRetryTime) return;
+
         Player localPlayer = Client.getLocalPlayer();
         if (localPlayer != null && ((double) localPlayer.getCurrentHealth() / localPlayer.getMaximumHealth()) < 0.4) {
-            return;
+            return; // Check player's health before proceeding
         } else if (Backpack.isFull()) {
             manageFullBackpack();
-            collect(itemNames);
+            nextRetryTime = System.currentTimeMillis() + RandomGenerator.nextInt(1000, 2000);
+            itemsToRetry.addAll(itemNames);
             return;
         }
-        ResultSet<GroundItem> groundItems = GroundItemQuery.newQuery().results();
 
         boolean foundItem = false;
-        for (GroundItem groundItem : groundItems) {
-            if (itemNames.contains(groundItem.getName())) {
-                foundItem = true;
-                ScriptConsole.println("Attempting to pick up: " + groundItem.getName(), new Object[0]);
-                groundItem.interact("Take");
-                Execution.delayUntil(RandomGenerator.nextInt(5000, 8000), () -> GroundItemQuery.newQuery().name(groundItem.getName()).results().isEmpty());
-                ScriptConsole.println("Picked up: " + groundItem.getName(), new Object[0]);
+
+        ResultSet<GroundItem> namedItems = GroundItemQuery.newQuery().results();
+        for (String itemName : itemNames) {
+            Optional<GroundItem> itemOpt = namedItems.stream()
+                    .filter(item -> item.getName().equalsIgnoreCase(itemName) && !itemsToRetry.contains(item.getName()))
+                    .findFirst();
+
+            if (itemOpt.isPresent()) {
+                GroundItem item = itemOpt.get();
+                println("Attempting to pick up: " + item.getName());
+                if (item.interact("Take")) {
+                    Execution.delayUntil(RandomGenerator.nextInt(1820, 1850), () -> !item.validate());
+                    itemsToRetry.remove(item.getName());
+                    foundItem = true;
+                    break;
+                } else {
+                    itemsToRetry.add(item.getName());
+                    nextRetryTime = System.currentTimeMillis() + RandomGenerator.nextInt(1000, 2000);
+                    break;
+                }
             }
         }
-        if (foundItem) {
-            collect(itemNames);
+
+        if (!foundItem && !itemsToRetry.isEmpty()) {
+            nextRetryTime = System.currentTimeMillis() + RandomGenerator.nextInt(1000, 2000);
+        }
+    }
+
+    public void retryCollection() {
+        if (!itemsToRetry.isEmpty() && System.currentTimeMillis() >= nextRetryTime) {
+            collect(new ArrayList<>(itemsToRetry));
+            itemsToRetry.clear();
         }
     }
 
 
-    private void attemptToPickUpGroundItem(GroundItem groundItem) {
+    private void attemptToPickUpGroundItem(GroundItem groundItem, long endTime) {
         if (Backpack.isFull()) {
             manageFullBackpack();
-        } else if (!Backpack.isFull() && groundItem != null) {
-            println("Attempting to take ground item: " + groundItem.getName());
-            boolean interactionSuccess = groundItem.interact("Take");
-            Execution.delay(RandomGenerator.nextInt(500, 900));
-            if (interactionSuccess) {
-                Execution.delayUntil(RandomGenerator.nextInt(4500, 5000), () -> GroundItemQuery.newQuery().name(groundItem.getName()).results().isEmpty());
-            }
+            return;
         }
+
+        if (groundItem == null) {
+            return;
+        }
+
+        println("Attempting to take ground item: " + groundItem.getName());
+        boolean interactionSuccess = groundItem.interact("Take");
+        Execution.delay(RandomGenerator.nextInt(500, 900));
+
+        if (!interactionSuccess) {
+            if (System.currentTimeMillis() < endTime) {
+                Execution.delay(RandomGenerator.nextInt(1000, 2000));
+                attemptToPickUpGroundItem(groundItem, endTime);
+            }
+            return;
+        }
+        boolean itemTaken = Execution.delayUntil(RandomGenerator.nextInt(1000, 2000),
+                () -> GroundItemQuery.newQuery().name(groundItem.getName()).results().isEmpty());
+
+        if (!itemTaken && System.currentTimeMillis() < endTime) {
+            Execution.delay(RandomGenerator.nextInt(1000, 2000));
+            attemptToPickUpGroundItem(groundItem, endTime);
+        }
+    }
+
+    // Method to start the pickup attempt with a 30-second timeout
+    private void startPickUpAttempt(GroundItem groundItem) {
+        long endTime = System.currentTimeMillis() + 30000; // 30 seconds from now
+        attemptToPickUpGroundItem(groundItem, endTime);
     }
 
     private void manageFullBackpack() {
         println("Backpack is full, attempting to eat food.");
-        ResultSet<Item> foodItems = InventoryItemQuery.newQuery().option("Eat").results();
+        ResultSet<Item> foodItems = InventoryItemQuery.newQuery(93).option("Eat").results();
         if (!foodItems.isEmpty()) {
             Item food = foodItems.first();
             if (food != null) {
                 eatFood(food);
             }
         } else {
-            println("No food to eat, retreating.");
+            println("No food to eat, retreating and stopping script." + ActionBar.useAbility("War's Retreat Teleport"));
+            stopScript();
         }
     }
 
@@ -622,16 +825,16 @@ public class SkeletonScript extends LoopingScript {
                 .results()
                 .nearest();
         if (groundItem != null) {
-            attemptToPickUpGroundItem(groundItem);
+            startPickUpAttempt(groundItem);
         }
     }
 
     public void setPrayerPointsThreshold(int threshold) {
-        this.prayerPointsThreshold = threshold;
+        prayerPointsThreshold = threshold;
     }
 
     public void setHealthThreshold(int healthThreshold) {
-        this.healthThreshold = healthThreshold;
+        SkeletonScript.healthThreshold = healthThreshold;
     }
 
     public void usePrayerOrRestorePots() {
@@ -733,6 +936,7 @@ public class SkeletonScript extends LoopingScript {
             println("Activating Soul Split:  " + ActionBar.useAbility("Soul Split"));
         }
     }
+
     private void DeactivateSoulSplit() {
         if (VarManager.getVarbitValue(16779) == 1) {
             Execution.delay(RandomGenerator.nextInt(600, 1500));
@@ -940,6 +1144,10 @@ public class SkeletonScript extends LoopingScript {
                     Execution.delayUntil(RandomGenerator.nextInt(300, 500), () -> getLocalPlayer().getCurrentHealth() > 8000);
                 } else {
                     println("No food found!");
+                    if (teleportToWarOnHealth) {
+                        ActionBar.useAbility("War's Retreat Teleport");
+                        stopScript();
+                    }
                 }
             }
         }
@@ -989,47 +1197,63 @@ public class SkeletonScript extends LoopingScript {
             }
         }
     }
+
     public static int NecrosisStacksThreshold = 12;
 
     private void essenceOfFinality() {
-        if (getLocalPlayer().getAdrenaline() >= 300
-                && ComponentQuery.newQuery(291).spriteId(55524).results().isEmpty()
-                && ActionBar.getCooldownPrecise("Essence of Finality") == 0 && getLocalPlayer().inCombat() && getLocalPlayer().getFollowing() != null && getLocalPlayer().hasTarget()){
-            if (VarManager.getVarValue(VarDomainType.PLAYER, 10986) >= NecrosisStacksThreshold) {
-                println("Used Death Grasp: " + ActionBar.useAbility("Essence of Finality"));
-                Execution.delayUntil(RandomGenerator.nextInt(1820, 1850), () -> ComponentQuery.newQuery(291).spriteId(55524).results().isEmpty());
+        if (getLocalPlayer() != null) {
+            if (getLocalPlayer().getAdrenaline() >= 250
+                    && ComponentQuery.newQuery(291).spriteId(55524).results().isEmpty()
+                    && ActionBar.getCooldownPrecise("Essence of Finality") == 0 && getLocalPlayer().inCombat() && getLocalPlayer().getFollowing() != null
+                    && getLocalPlayer().hasTarget()
+                    && ActionBar.getCooldownPrecise("Essence of Finality") == 0) {
+                int currentNecrosisStacks = VarManager.getVarValue(VarDomainType.PLAYER, 10986);
+                if (currentNecrosisStacks >= NecrosisStacksThreshold) {
+                    boolean abilityUsed = ActionBar.useAbility("Essence of Finality");
+                    if (abilityUsed) {
+                        println("Used Death Grasp with " + currentNecrosisStacks + " Necrosis stacks.");
+                        Execution.delayUntil(RandomGenerator.nextInt(5000, 10000), () -> ComponentQuery.newQuery(291).spriteId(55524).results().isEmpty());
+                    } else {
+                        println("Attempted to use Death Grasp, but ability use failed.");
+                    }
+                }
             }
         }
     }
+
     private void DeathEssence() { //55480 sprite iD
         if (Essence) {
             if (getLocalPlayer() != null) {
 
                 if (getLocalPlayer().getAdrenaline() >= 350 && getLocalPlayer().getFollowing() != null && getLocalPlayer().getFollowing().getCurrentHealth() >= 500 && ComponentQuery.newQuery(291).spriteId(55480).results().isEmpty() && getLocalPlayer().hasTarget()) {
                     println("Used Death Essence: " + ActionBar.useAbility("Weapon Special Attack"));
-                    Execution.delayUntil(RandomGenerator.nextInt(1820, 1850), () -> ComponentQuery.newQuery(291).spriteId(55480).results().isEmpty());
+                    Execution.delayUntil(RandomGenerator.nextInt(2400, 3000), () -> ComponentQuery.newQuery(291).spriteId(55480).results().isEmpty());
                 }
             }
         }
     }
-    int RisidualSouls = VarManager.getVarValue(VarDomainType.PLAYER, 11035);
+
     public static int VolleyOfSoulsThreshold = 5;
 
     private void volleyOfSouls() {
-        if (VarManager.getVarValue(VarDomainType.PLAYER, 11035) >= VolleyOfSoulsThreshold && getLocalPlayer().inCombat() && getLocalPlayer().getFollowing() != null && getLocalPlayer().hasTarget()) {
-            println("Using Volley of Souls: " + ActionBar.useAbility("Volley of Souls"));
-            Execution.delayUntil(RandomGenerator.nextInt(1820, 1850), () -> RisidualSouls >= VolleyOfSoulsThreshold);
+        if (getLocalPlayer() != null && VarManager.getVarValue(VarDomainType.PLAYER, 11035) >= VolleyOfSoulsThreshold && getLocalPlayer().inCombat() && getLocalPlayer().getFollowing() != null && getLocalPlayer().hasTarget()) {
+            int currentResidualSouls = VarManager.getVarValue(VarDomainType.PLAYER, 11035); // Assuming this var tracks the relevant mechanic
+            boolean abilityUsed = ActionBar.useAbility("Volley of Souls");
+            if (abilityUsed) {
+                println("Used Volley of Souls with " + currentResidualSouls + " residual souls.");
+                Execution.delayUntil(RandomGenerator.nextInt(2400, 3000), () -> VarManager.getVarValue(VarDomainType.PLAYER, 11035) >= VolleyOfSoulsThreshold);
+            } else {
+                println("Attempted to use Volley of Souls, but ability use failed.");
+            }
         }
     }
 
-    private void Deathmark() {
-        if (InvokeDeath) {
-            if (getLocalPlayer() != null) {
 
-                if (VarManager.getVarbitValue(53247) == 0 && getLocalPlayer().getFollowing() != null && getLocalPlayer().getFollowing().getCurrentHealth() >= 500 && ActionBar.getCooldownPrecise("Invoke Death") == 0 && getLocalPlayer().hasTarget()) {
-                    println("Used Invoke: " + ActionBar.useAbility("Invoke Death"));
-                    Execution.delayUntil(RandomGenerator.nextInt(1820, 1850), () -> VarManager.getVarbitValue(53247) == 0);
-                }
+    private void Deathmark() {
+        if (Self != null) {
+            if (VarManager.getVarbitValue(53247) == 0 && getLocalPlayer().getFollowing() != null && getLocalPlayer().getFollowing().getCurrentHealth() >= 500 && ActionBar.getCooldownPrecise("Invoke Death") == 0 && getLocalPlayer().hasTarget()) {
+                println("Used Invoke: " + ActionBar.useAbility("Invoke Death"));
+                Execution.delayUntil(RandomGenerator.nextInt(2400, 3000), () -> VarManager.getVarbitValue(53247) == 0);
             }
         }
     }
@@ -1111,43 +1335,6 @@ public class SkeletonScript extends LoopingScript {
 
     Coordinate coords = new Coordinate(3295, 10131, 0);
     int warsRetreatRegionId = coords.getRegionId();
-
-    private void TeleportToWarOnHealth() {
-        if (teleportToWarOnHealth) {
-            LocalPlayer player = Client.getLocalPlayer();
-            if (player != null) {
-                double healthPercentage = (double) player.getCurrentHealth() / player.getMaximumHealth() * 100;
-                if (healthPercentage < healthThreshold) {
-                    ResultSet<Item> items = InventoryItemQuery.newQuery().results();
-
-                    boolean hasHealingItem = items.stream().anyMatch(item -> {
-                        if (item.getName() != null) {
-                            if (item.getName().toLowerCase().contains("saradomin")) return true;
-                            ItemType itemType = item.getConfigType();
-                            if (itemType != null) {
-                                return itemType.getBackpackOptions().contains("Eat");
-                            }
-                        }
-                        return false;
-                    });
-
-                    if (!hasHealingItem) {
-                        println("No food or Saradomin potions found in backpack. Attempting to teleport to War's Retreat due to low health.");
-                        ActionBar.useAbility("War's Retreat Teleport");
-
-                        Execution.delay(5000);
-
-                        Coordinate currentPosition = Client.getLocalPlayer().getCoordinate();
-                        int currentRegionId = currentPosition.getRegionId();
-                        if (currentRegionId == warsRetreatRegionId) {
-                            println("Teleport successful, player is now in War's Retreat region.");
-                            stopScript();
-                        }
-                    }
-                }
-            }
-        }
-    }
 
     private void UseThievingDummy() {
         if (useThievingDummy) {
@@ -1276,39 +1463,6 @@ public class SkeletonScript extends LoopingScript {
         }
     }
 
-    private void setupStartingSkillLevels() {
-        startingAttackLevel = Skills.ATTACK.getSkill().getLevel();
-        startingStrengthLevel = Skills.STRENGTH.getSkill().getLevel();
-        startingDefenseLevel = Skills.DEFENSE.getSkill().getLevel();
-        startingRangedLevel = Skills.RANGED.getSkill().getLevel();
-        startingPrayerLevel = Skills.PRAYER.getSkill().getLevel();
-        startingMagicLevel = Skills.MAGIC.getSkill().getLevel();
-        startingRunecraftingLevel = Skills.RUNECRAFTING.getSkill().getLevel();
-        startingConstructionLevel = Skills.CONSTRUCTION.getSkill().getLevel();
-        startingDungeoneeringLevel = Skills.DUNGEONEERING.getSkill().getLevel();
-        startingArchaeologyLevel = Skills.ARCHAEOLOGY.getSkill().getLevel();
-        startingConstitutionLevel = Skills.CONSTITUTION.getSkill().getLevel();
-        startingAgilityLevel = Skills.AGILITY.getSkill().getLevel();
-        startingHerbloreLevel = Skills.HERBLORE.getSkill().getLevel();
-        startingThievingLevel = Skills.THIEVING.getSkill().getLevel();
-        startingCraftingLevel = Skills.CRAFTING.getSkill().getLevel();
-        startingFletchingLevel = Skills.FLETCHING.getSkill().getLevel();
-        startingSlayerLevel = Skills.SLAYER.getSkill().getLevel();
-        startingHunterLevel = Skills.HUNTER.getSkill().getLevel();
-        startingDivinationLevel = Skills.DIVINATION.getSkill().getLevel();
-        startingNecromancyLevel = Skills.NECROMANCY.getSkill().getLevel();
-        startingMiningLevel = Skills.MINING.getSkill().getLevel();
-        startingSmithingLevel = Skills.SMITHING.getSkill().getLevel();
-        startingFishingLevel = Skills.FISHING.getSkill().getLevel();
-        startingCookingLevel = Skills.COOKING.getSkill().getLevel();
-        startingFiremakingLevel = Skills.FIREMAKING.getSkill().getLevel();
-        startingWoodcuttingLevel = Skills.WOODCUTTING.getSkill().getLevel();
-        startingFarmingLevel = Skills.FARMING.getSkill().getLevel();
-        startingSummoningLevel = Skills.SUMMONING.getSkill().getLevel();
-        startingInventionLevel = Skills.INVENTION.getSkill().getLevel();
-    }
-
-
     public void checkAndPerformLogout() {
         if (Logout) {
             if (System.currentTimeMillis() >= targetLogoutTimeMillis && targetLogoutTimeMillis != 0) {
@@ -1366,7 +1520,6 @@ public class SkeletonScript extends LoopingScript {
                         .results();
 
                 if (componentResults.isEmpty()) {
-                    Item itemToInteract = backpackResults.first();
 
                     String option = "Light";
                     if (overloadEnabled) {
@@ -1395,7 +1548,6 @@ public class SkeletonScript extends LoopingScript {
                         .results();
 
                 if (componentResults.isEmpty()) {
-                    Item itemToInteract = backpackResults.first();
 
                     String option = "Light";
                     if (overloadEnabled) {
@@ -1424,7 +1576,6 @@ public class SkeletonScript extends LoopingScript {
                         .results();
 
                 if (componentResults.isEmpty()) {
-                    Item itemToInteract = backpackResults.first();
 
                     String option = "Light";
                     if (overloadEnabled) {
@@ -1490,7 +1641,7 @@ public class SkeletonScript extends LoopingScript {
 
 
     private void CystalMask() {
-        if (useCrystalMask && !isCrystalMaskActive()) {
+        if (!isCrystalMaskActive()) {
             println("Activating Crystal Mask.");
             if (ActionBar.useAbility("Crystal Mask")) {
                 println("Crystal Mask activated successfully.");
@@ -1501,19 +1652,15 @@ public class SkeletonScript extends LoopingScript {
         }
     }
 
-    private boolean lightFormActive = false;
-
 
     private void LightFormActivation() {
-        if (useLightForm) {
-            int lightFormEnabled = VarManager.getVarbitValue(29066);
-            if (!lightFormActive && lightFormEnabled != 1) {
-                activateLightForm();
-            } else if (lightFormActive && lightFormEnabled == 1 && !useLightForm) {
-                deactivateLightForm();
-            }
+        int lightFormEnabled = VarManager.getVarbitValue(29066);
+        boolean lightFormActive = false;
+        if (!lightFormActive && lightFormEnabled != 1) {
+            activateLightForm();
         }
     }
+
 
     private void activateLightForm() {
         ActionBar.useAbility("Light Form");
@@ -1658,6 +1805,7 @@ public class SkeletonScript extends LoopingScript {
             }
         }
     }
+
     private void manageScriptureOfJas() {
         if (getLocalPlayer() != null) {
             if (getLocalPlayer().inCombat()) {
@@ -1667,6 +1815,7 @@ public class SkeletonScript extends LoopingScript {
             }
         }
     }
+
     private void activateScriptureOfJas() {
         if (VarManager.getVarbitValue(30605) == 0 && VarManager.getVarbitValue(30604) >= 60) {
             Execution.delay(RandomGenerator.nextInt(600, 1500));
@@ -1681,6 +1830,7 @@ public class SkeletonScript extends LoopingScript {
             println("Deactivated Scripture of Jas:  " + Equipment.interact(Equipment.Slot.POCKET, "Activate/Deactivate"));
         }
     }
+
     private void manageScriptureOfWen() {
         if (getLocalPlayer() != null) {
             if (getLocalPlayer().inCombat()) {
@@ -1690,6 +1840,7 @@ public class SkeletonScript extends LoopingScript {
             }
         }
     }
+
     private void activateScriptureOfWen() {
         if (VarManager.getVarbitValue(30605) == 0 && VarManager.getVarbitValue(30604) >= 60) {
             Execution.delay(RandomGenerator.nextInt(600, 1500));
@@ -1713,12 +1864,14 @@ public class SkeletonScript extends LoopingScript {
             }
         }
     }
+
     private void activateScriptureOfFul() {
         if (VarManager.getVarbitValue(30605) == 0 && VarManager.getVarbitValue(30604) >= 60) {
             Execution.delay(RandomGenerator.nextInt(600, 1500));
             println("Activated Scripture of Ful:  " + Equipment.interact(Equipment.Slot.POCKET, "Activate/Deactivate"));
         }
     }
+
     private void deactivateScriptureOfFul() {
         if (VarManager.getVarbitValue(30605) == 1) {
             Execution.delay(RandomGenerator.nextInt(600, 1500));
@@ -1754,9 +1907,9 @@ public class SkeletonScript extends LoopingScript {
         }
     }
 
-    private boolean hasComponentWithSpriteId(int interfaceId, int spriteId) {
+    private boolean hasComponentWithSpriteId(int interfaceId) {
         ResultSet<Component> components = ComponentQuery.newQuery(interfaceId)
-                .spriteId(spriteId)
+                .spriteId(43358)
                 .results();
         return !components.isEmpty();
     }
@@ -1766,11 +1919,56 @@ public class SkeletonScript extends LoopingScript {
 
             int currentPrayerPoints = LocalPlayer.LOCAL_PLAYER.getPrayerPoints();
 
-            if (currentPrayerPoints < prayerPointsThreshold && !hasComponentWithSpriteId(291, 43358)) {
+            if (currentPrayerPoints < prayerPointsThreshold && !hasComponentWithSpriteId(291)) {
                 InventoryItemQuery.newQuery(93).name("Ancient elven ritual shard").results();
                 Backpack.interact("Ancient elven ritual shard", "Activate");
                 println("Activated Ancient Elven Ritual Shard at: " + currentPrayerPoints + " prayer points.");
-                Execution.delayUntil(10000, () -> hasComponentWithSpriteId(284, 43358));
+                Execution.delayUntil(10000, () -> hasComponentWithSpriteId(284));
+            }
+        }
+    }
+    private void WorldHopper() {
+        if (nextWorldHopTime == 0) {
+            int waitTimeInMs = RandomGenerator.nextInt(minHopIntervalMinutes * 60 * 1000, maxHopIntervalMinutes * 60 * 1000);
+            nextWorldHopTime = System.currentTimeMillis() + waitTimeInMs;
+            println("Next hop scheduled in " + (waitTimeInMs / 60000) + " minutes.");
+
+            return;
+        }
+
+        if (System.currentTimeMillis() >= nextWorldHopTime && !Self.inCombat()) {
+            int randomMembersWorldsIndex = RandomGenerator.nextInt(membersWorlds.length);
+            HopWorlds(membersWorlds[randomMembersWorldsIndex]);
+            println("Hopped to world: " + membersWorlds[randomMembersWorldsIndex]);
+
+            nextWorldHopTime = 0;
+        }
+    }
+
+    public static long nextWorldHopTime = 0;
+    static int minHopIntervalMinutes = 60;
+    static int maxHopIntervalMinutes = 180;
+
+
+    public static void HopWorlds(int world) {
+        MiniMenu.interact(ComponentAction.COMPONENT.getType(), 1, 7, 93782016);
+        boolean WorldPage = Execution.delayUntil(5000, () -> Interfaces.isOpen(1433));
+        Execution.delay(RandomGenerator.nextInt(1500, 2000));
+
+        if (WorldPage) {
+            Component HopWorldsMenu = ComponentQuery.newQuery(1433).componentIndex(65).results().first();
+            if (HopWorldsMenu != null) {
+                MiniMenu.interact(ComponentAction.COMPONENT.getType(), 1, -1, 93913153);
+                ScriptConsole.println("Hop Worlds Button Clicked.");
+                boolean worldSelectOpen = Execution.delayUntil(5000, () -> Interfaces.isOpen(1587));
+                Execution.delay(RandomGenerator.nextInt(1500, 2000));
+
+                if (worldSelectOpen) {
+                    MiniMenu.interact(ComponentAction.COMPONENT.getType(), 2, world, 104005640);
+                    Execution.delay(RandomGenerator.nextInt(10000, 20000));
+                }
+            } else {
+                ScriptConsole.println("Hop Worlds Button not found.");
             }
         }
     }
@@ -1813,15 +2011,27 @@ public class SkeletonScript extends LoopingScript {
         this.configuration.addProperty("useVolleyofSouls", String.valueOf(this.useVolleyofSouls));
         this.configuration.addProperty("Essence", String.valueOf(this.Essence));
         this.configuration.addProperty("AttackaTarget", String.valueOf(this.AttackaTarget));
-
-
+        String serializedItemNames = String.join(",", this.targetItemNames);
+        this.configuration.addProperty("ItemsToPickup", serializedItemNames);
+        String targetNamesSerialized = String.join(",", this.targetNames);
+        this.configuration.addProperty("TargetNames", targetNamesSerialized);
+        this.configuration.addProperty("VolleyOfSoulsThreshold", String.valueOf(SkeletonScript.VolleyOfSoulsThreshold));
+        this.configuration.addProperty("NecrosisStacksThreshold", String.valueOf(SkeletonScript.NecrosisStacksThreshold));
+        this.configuration.addProperty("PrayerPointsThreshold", String.valueOf(prayerPointsThreshold));
+        this.configuration.addProperty("HealthThreshold", String.valueOf(healthThreshold));
+        this.configuration.addProperty("Notepaper", String.valueOf(this.Notepaper));
+        String serializedItemNamesForNotepaper = String.join(",", this.itemNamesToUseOnNotepaper);
+        this.configuration.addProperty("ItemNamesToUseOnNotepaper", serializedItemNamesForNotepaper);
+        this.configuration.addProperty("useLootInterface", String.valueOf(this.useLootInterface));
+        this.configuration.addProperty("InteractWithLootAll", String.valueOf(this.InteractWithLootAll));
 
         this.configuration.save();
     }
 
-
     public void loadConfiguration() {
         try {
+            this.useLootInterface = Boolean.parseBoolean(this.configuration.getProperty("useLootInterface"));
+            this.InteractWithLootAll = Boolean.parseBoolean(this.configuration.getProperty("InteractWithLootAll"));
             this.useSaraBrew = Boolean.parseBoolean(this.configuration.getProperty("useSaraBrew"));
             this.useSaraBrewandBlubber = Boolean.parseBoolean(this.configuration.getProperty("useSaraBrewandBlubber"));
             this.eatFood = Boolean.parseBoolean(this.configuration.getProperty("eatFood"));
@@ -1858,13 +2068,66 @@ public class SkeletonScript extends LoopingScript {
             this.useEssenceOfFinality = Boolean.parseBoolean(this.configuration.getProperty("useEssenceOfFinality"));
             this.useVolleyofSouls = Boolean.parseBoolean(this.configuration.getProperty("useVolleyofSouls"));
             this.Essence = Boolean.parseBoolean(this.configuration.getProperty("Essence"));
+            this.Notepaper = Boolean.parseBoolean(this.configuration.getProperty("Notepaper"));
             this.AttackaTarget = Boolean.parseBoolean(this.configuration.getProperty("AttackaTarget"));
+            String serializedItemNames = this.configuration.getProperty("ItemsToPickup");
+            if (serializedItemNames != null && !serializedItemNames.isEmpty()) {
+                String[] loadedItemNames = serializedItemNames.split(",");
+                this.targetItemNames.clear();
+                for (String itemName : loadedItemNames) {
+                    this.addItemName(itemName);
+                }
+            }
+            String targetNamesSerialized = this.configuration.getProperty("TargetNames");
+            if (targetNamesSerialized != null && !targetNamesSerialized.isEmpty()) {
+                String[] loadedTargetNames = targetNamesSerialized.split(",");
+                this.targetNames.clear();
+                for (String targetName : loadedTargetNames) {
+                    this.addTargetName(targetName);
+                }
+            }
+            String necrosisThresholdValue = this.configuration.getProperty("NecrosisStacksThreshold");
+            if (necrosisThresholdValue != null && !necrosisThresholdValue.isEmpty()) {
+                int necrosisThreshold = Integer.parseInt(necrosisThresholdValue);
+                if (necrosisThreshold < 0) necrosisThreshold = 0;
+                else if (necrosisThreshold > 12) necrosisThreshold = 12;
+                SkeletonScript.NecrosisStacksThreshold = necrosisThreshold;
+            }
 
+            String volleyThresholdValue = this.configuration.getProperty("VolleyOfSoulsThreshold");
+            if (volleyThresholdValue != null && !volleyThresholdValue.isEmpty()) {
+                int volleyThreshold = Integer.parseInt(volleyThresholdValue);
+                if (volleyThreshold < 0) volleyThreshold = 0;
+                SkeletonScript.VolleyOfSoulsThreshold = volleyThreshold;
+            }
+            String prayerThresholdValue = this.configuration.getProperty("PrayerPointsThreshold");
+            if (prayerThresholdValue != null && !prayerThresholdValue.isEmpty()) {
+                int prayerThreshold = Integer.parseInt(prayerThresholdValue);
+                if (prayerThreshold < 0) prayerThreshold = 0;
+                this.setPrayerPointsThreshold(prayerThreshold);
+            }
 
+            String healthThresholdValue = this.configuration.getProperty("HealthThreshold");
+            if (healthThresholdValue != null && !healthThresholdValue.isEmpty()) {
+                int healthThreshold = Integer.parseInt(healthThresholdValue);
+                if (healthThreshold < 0) healthThreshold = 0;
+                this.setHealthThreshold(healthThreshold);
+            }
+            String serializedItemNamesForNotepaper = this.configuration.getProperty("ItemNamesToUseOnNotepaper");
+            if (serializedItemNamesForNotepaper != null && !serializedItemNamesForNotepaper.isEmpty()) {
+                String[] loadedItemNamesForNotepaper = serializedItemNamesForNotepaper.split(",");
+                this.itemNamesToUseOnNotepaper.clear();
+                this.itemNamesToUseOnNotepaper.addAll(Arrays.asList(loadedItemNamesForNotepaper));
+            }
             println("Configuration loaded successfully.");
+        } catch (NumberFormatException e) {
+            println("Error parsing threshold values. Using defaults.");
+            SkeletonScript.NecrosisStacksThreshold = 12; // Default or a logical fallback
+            SkeletonScript.VolleyOfSoulsThreshold = 5; // Default or a logical fallback
+            SkeletonScript.healthThreshold = 50;
+            SkeletonScript.prayerPointsThreshold = 5000;
         } catch (Exception e) {
             println("Failed to load configuration. Using defaults.");
         }
     }
 }
-//realtest
