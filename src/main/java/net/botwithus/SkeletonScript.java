@@ -1867,4 +1867,50 @@ public class SkeletonScript extends LoopingScript {
             println("Failed to load configuration. Using defaults.");
         }
     }
+    /*public void loadConfiguration() {
+        try {
+            this.useSaraBrew = Boolean.parseBoolean(this.configuration.getProperty("useSaraBrew"));
+            this.useSaraBrewandBlubber = Boolean.parseBoolean(this.configuration.getProperty("useSaraBrewandBlubber"));
+            this.eatFood = Boolean.parseBoolean(this.configuration.getProperty("eatFood"));
+            this.useprayer = Boolean.parseBoolean(this.configuration.getProperty("useprayer"));
+            this.useoverload = Boolean.parseBoolean(this.configuration.getProperty("useoverload"));
+            this.UseSoulSplit = Boolean.parseBoolean(this.configuration.getProperty("UseSoulSplit"));
+            this.useaggression = Boolean.parseBoolean(this.configuration.getProperty("useaggression"));
+            this.usecooking = Boolean.parseBoolean(this.configuration.getProperty("useCooking"));
+            this.usedivination = Boolean.parseBoolean(this.configuration.getProperty("useDivination"));
+            this.useHunter = Boolean.parseBoolean(this.configuration.getProperty("useHunter"));
+            this.usedarkness = Boolean.parseBoolean(this.configuration.getProperty("usedarkness"));
+            this.quickprayer = Boolean.parseBoolean(this.configuration.getProperty("quickprayer"));
+            this.UseSmokeBomb = Boolean.parseBoolean(this.configuration.getProperty("UseSmokeBomb"));
+            this.UseVulnBomb = Boolean.parseBoolean(this.configuration.getProperty("UseVulnBomb"));
+            this.InvokeDeath = Boolean.parseBoolean(this.configuration.getProperty("InvokeDeath"));
+            this.teleportToWarOnHealth = Boolean.parseBoolean(this.configuration.getProperty("teleportToWarOnHealth"));
+            this.TorstolIncence = Boolean.parseBoolean(this.configuration.getProperty("TorstolIncence"));
+            this.KwuarmIncence = Boolean.parseBoolean(this.configuration.getProperty("KwuarmIncence"));
+            this.LantadymeIncence = Boolean.parseBoolean(this.configuration.getProperty("LantadymeIncence"));
+            this.usePenance = Boolean.parseBoolean(this.configuration.getProperty("usePenance"));
+            this.useProtection = Boolean.parseBoolean(this.configuration.getProperty("useProtection"));
+            this.useLightForm = Boolean.parseBoolean(this.configuration.getProperty("useLightForm"));
+            this.useCrystalMask = Boolean.parseBoolean(this.configuration.getProperty("useCrystalMask"));
+            this.useSuperheatForm = Boolean.parseBoolean(this.configuration.getProperty("useSuperheatForm"));
+            this.useNecromancyPotion = Boolean.parseBoolean(this.configuration.getProperty("useNecromancyPotion"));
+            this.useAntifire = Boolean.parseBoolean(this.configuration.getProperty("useAntifire"));
+            this.useExcalibur = Boolean.parseBoolean(this.configuration.getProperty("useExcalibur"));
+            this.UseScriptureOfWen = Boolean.parseBoolean(this.configuration.getProperty("UseScriptureOfWen"));
+            this.UseScriptureOfJas = Boolean.parseBoolean(this.configuration.getProperty("UseScriptureOfJas"));
+            this.UseScriptureOfFul = Boolean.parseBoolean(this.configuration.getProperty("UseScriptureOfFul"));
+            this.useWeaponPoison = Boolean.parseBoolean(this.configuration.getProperty("useWeaponPoison"));
+            this.useAncientElven = Boolean.parseBoolean(this.configuration.getProperty("useAncientElven"));
+            this.useLoot = Boolean.parseBoolean(this.configuration.getProperty("useLoot"));
+            this.useEssenceOfFinality = Boolean.parseBoolean(this.configuration.getProperty("useEssenceOfFinality"));
+            this.useVolleyofSouls = Boolean.parseBoolean(this.configuration.getProperty("useVolleyofSouls"));
+            this.Essence = Boolean.parseBoolean(this.configuration.getProperty("Essence"));
+            this.AttackaTarget = Boolean.parseBoolean(this.configuration.getProperty("AttackaTarget"));
+
+
+            println("Configuration loaded successfully.");
+        } catch (Exception e) {
+            println("Failed to load configuration. Using defaults.");
+        }
+    }*/
 }
