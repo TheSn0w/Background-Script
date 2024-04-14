@@ -2,9 +2,9 @@ package net.botwithus;
 
 import net.botwithus.api.game.hud.inventories.Backpack;
 import net.botwithus.api.game.hud.inventories.Equipment;
-import net.botwithus.rs3.events.EventBus;
 import net.botwithus.rs3.events.impl.InventoryUpdateEvent;
 import net.botwithus.rs3.game.Distance;
+import net.botwithus.rs3.game.js5.types.configs.ConfigManager;
 import net.botwithus.rs3.game.js5.types.vars.VarDomainType;
 import net.botwithus.rs3.game.minimenu.MiniMenu;
 import net.botwithus.internal.scripts.ScriptDefinition;
@@ -14,10 +14,10 @@ import net.botwithus.rs3.game.Item;
 import net.botwithus.rs3.game.actionbar.ActionBar;
 import net.botwithus.rs3.game.hud.interfaces.Component;
 import net.botwithus.rs3.game.hud.interfaces.Interfaces;
-import net.botwithus.rs3.game.js5.types.ItemType;
 import net.botwithus.rs3.game.minimenu.actions.ComponentAction;
 import net.botwithus.rs3.game.minimenu.actions.SelectableAction;
 import net.botwithus.rs3.game.movement.Movement;
+import net.botwithus.rs3.game.movement.NavPath;
 import net.botwithus.rs3.game.queries.builders.animations.SpotAnimationQuery;
 import net.botwithus.rs3.game.queries.builders.characters.NpcQuery;
 import net.botwithus.rs3.game.queries.builders.components.ComponentQuery;
@@ -30,7 +30,6 @@ import net.botwithus.rs3.game.scene.entities.characters.npc.Npc;
 import net.botwithus.rs3.game.scene.entities.characters.player.LocalPlayer;
 import net.botwithus.rs3.game.scene.entities.characters.player.Player;
 import net.botwithus.rs3.game.scene.entities.item.GroundItem;
-import net.botwithus.rs3.game.skills.Skills;
 import net.botwithus.rs3.game.vars.VarManager;
 import net.botwithus.rs3.script.Execution;
 import net.botwithus.rs3.script.LoopingScript;
@@ -42,16 +41,15 @@ import net.botwithus.rs3.util.Regex;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.*;
-import java.util.concurrent.ThreadLocalRandom;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-import java.util.stream.Collectors;
 
 import static net.botwithus.rs3.game.Client.getLocalPlayer;
 
 public class SkeletonScript extends LoopingScript {
     LocalPlayer Self = Client.getLocalPlayer();
     public int attackRadius = 10;
+    boolean Backgroundscript;
     boolean Notepaper;
     boolean HopWorlds;
     boolean useThievingDummy;
@@ -108,6 +106,7 @@ public class SkeletonScript extends LoopingScript {
     boolean UseVulnBomb;
     boolean InvokeDeath;
     boolean buryBones;
+    boolean useCharming;
 
     static int[] membersWorlds = new int[]{
             1, 2, 4, 5, 6, 9, 10, 12, 14, 15,
@@ -127,6 +126,8 @@ public class SkeletonScript extends LoopingScript {
         this.sgc = new SkeletonScriptGraphicsContext(getConsole(), this);
         super.initialize();
         this.isBackgroundScript = true;
+
+        /*isBackgroundScript = true;*/
         this.loopDelay = RandomGenerator.nextInt(1200, 1800);
         this.sgc = new SkeletonScriptGraphicsContext(getConsole(), this);
         this.runStartTime = System.currentTimeMillis();
@@ -148,8 +149,7 @@ public class SkeletonScript extends LoopingScript {
         if (scriptRunning) {
             scriptRunning = false;
 
-            // Unsubscribe from the event
-            unsubscribeFromInventoryUpdateEvent(); // This is a placeholder. Replace it with actual API call.
+            unsubscribeAll();
 
             Instant stopTime = Instant.now();
             println("Script stopped at: " + stopTime);
@@ -160,10 +160,6 @@ public class SkeletonScript extends LoopingScript {
         }
     }
 
-    private void unsubscribeFromInventoryUpdateEvent() {
-        unsubscribeAll();
-        // For example: eventManager.removeListener(this::onInventoryUpdate);
-    }
 
 
     @Override
@@ -181,7 +177,7 @@ public class SkeletonScript extends LoopingScript {
             LootEverything();
 
         if (useLootInterface)
-            LootFromInterfaces();
+            processLooting();
 
         if (Notepaper)
             for (String itemName : getItemNamesToUseOnNotepaper()) {
@@ -320,41 +316,43 @@ public class SkeletonScript extends LoopingScript {
 
         if (AttackaTarget)
             attackTarget();
+
+        if (useCharming)
+            CharmingPotion();
     }
 
     private void handleBonesAndAshes() {
-        // Flag to keep track if either bones or ashes were found and interacted with
-        boolean itemsHandled;
+        if (!scriptRunning) {
+            return;
+        }
 
-        do {
-            itemsHandled = false;
+        boolean itemsHandled = false;
 
-            // Query for items with "Bury" action (assuming these are bones)
-            ResultSet<Item> bones = InventoryItemQuery.newQuery(93).option("Bury").results();
-            if (!bones.isEmpty()) {
-                Item bone = bones.first();
-                assert bone != null;
-                Backpack.interact(bone.getName(), "Bury");
-                println("Burying " + bone.getName());
-                itemsHandled = true;
-                // Delay to simulate interaction time and recheck condition
-                Execution.delayUntil(RandomGenerator.nextInt(550, 650), () -> !Backpack.contains(bone.getName()));
-            }
+        ResultSet<Item> bones = InventoryItemQuery.newQuery(93).option("Bury").results();
+        if (!bones.isEmpty()) {
+            Item bone = bones.first();
+            assert bone != null;
+            Backpack.interact(bone.getSlot(), "Bury");
+            println("Burying " + bone.getName() + " at slot " + bone.getSlot());
+            itemsHandled = true;
+            Execution.delay(RandomGenerator.nextInt(600, 650));
+        }
 
-            // Query for items with "Scatter" action (assuming these are ashes)
-            ResultSet<Item> ashes = InventoryItemQuery.newQuery(93).option("Scatter").results();
-            if (!ashes.isEmpty()) {
-                Item ash = ashes.first();
-                assert ash != null;
-                Backpack.interact(ash.getName(), "Scatter");
-                println("Scattering " + ash.getName());
-                itemsHandled = true;
-                // Delay to simulate interaction time and recheck condition
-                Execution.delayUntil(RandomGenerator.nextInt(550, 650), () -> !Backpack.contains(ash.getName()));
-            }
+        ResultSet<Item> ashes = InventoryItemQuery.newQuery(93).option("Scatter").results();
+        if (!ashes.isEmpty()) {
+            Item ash = ashes.first();
+            assert ash != null;
+            Backpack.interact(ash.getSlot(), "Scatter");
+            println("Scattering " + ash.getName() + " at slot " + ash.getSlot());
+            itemsHandled = true;
+            Execution.delay(RandomGenerator.nextInt(630, 700));
+        }
 
-        } while (itemsHandled); // Continue if we handled either bones or ashes
+        if (itemsHandled) {
+            handleBonesAndAshes();
+        }
     }
+
 
     private List<String> targetNames = new ArrayList<>();
 
@@ -366,15 +364,25 @@ public class SkeletonScript extends LoopingScript {
         }
     }
 
-    private Integer pickedUpItemId = null;
+    private boolean hasPrintedItemMessage = false;
+
 
     private void onInventoryUpdate(InventoryUpdateEvent event) {
-        // Debug message to confirm the event triggers
+        // Check the inventory for items that are currently marked as noted
+        InventoryItemQuery.newQuery(93) // Assuming 93 is the backpack inventory ID
+                .results()
+                .forEach(item -> {
+                    String itemName = item.getName();
+                    if (itemName != null && notedItemsTracker.containsKey(itemName.toLowerCase())) {
+                        // If an unnoted version is found, unmark it in the tracker
+                        if (!Objects.requireNonNull(ConfigManager.getItemType(item.getId())).isNote()) {
+                            notedItemsTracker.put(itemName.toLowerCase(), false);
+                        }
+                    }
+                });
 
-        Item newItem = event.getNewItem(); // Assuming this method gives you the newly added item
-        if (newItem != null) {
-            pickedUpItemId = newItem.getId(); // Capture the newly picked-up item's ID
-        }
+        // Reset message flag to allow printing in the next interaction attempt
+        hasPrintedItemMessage = false;
     }
 
     public List<String> getItemNamesToUseOnNotepaper() {
@@ -391,22 +399,26 @@ public class SkeletonScript extends LoopingScript {
         itemNamesToUseOnNotepaper.remove(itemName); // Assumes you're storing item names in lowercase for case-insensitive matching
     }
 
+    private final Map<String, Boolean> notedItemsTracker = new HashMap<>();
+
     public void useItemOnNotepaper(String itemName) {
-        if (pickedUpItemId == null) {
-            return;
+        if (notedItemsTracker.getOrDefault(itemName.toLowerCase(), false)) {
+            return; // Item is noted, so we skip this iteration
         }
-
-
+        // Retrieve the item from the inventory using the item's name
         Item targetItem = InventoryItemQuery.newQuery(93)
                 .name(itemName)
                 .results()
                 .stream()
-                .filter(item -> item.getId() == pickedUpItemId && item.getStackSize() == 1)
+                .filter(item -> !Objects.requireNonNull(ConfigManager.getItemType(item.getId())).isNote()) // Ensure item is not noted
                 .findFirst()
                 .orElse(null);
 
         if (targetItem == null) {
-            println(itemName + " matching the recent pickup criteria not found or it's already noted.");
+            if (!hasPrintedItemMessage) {
+                println(itemName + " not found or it is already noted.");
+                hasPrintedItemMessage = true; // Prevent further messages until the inventory updates again
+            }
             return;
         }
 
@@ -425,19 +437,18 @@ public class SkeletonScript extends LoopingScript {
 
         println("Found " + itemName + " and Magic Notepaper. Preparing to use.");
 
-        // Simulate 'Use' action on the target item
         boolean itemSelected = MiniMenu.interact(SelectableAction.SELECTABLE_COMPONENT.getType(), 0, targetItem.getSlot(), 96534533);
         Execution.delay(RandomGenerator.nextInt(500, 750));
 
         if (itemSelected) {
             println("Using " + itemName + " on Magic Notepaper...");
-
-            // Simulate 'Use' action on Magic Notepaper
             boolean notepaperSelected = MiniMenu.interact(SelectableAction.SELECT_COMPONENT_ITEM.getType(), 0, notepaper.getSlot(), 96534533);
-            Execution.delay(RandomGenerator.nextInt(522, 787));
+            Execution.delay(RandomGenerator.nextInt(500, 750));
 
             if (notepaperSelected) {
                 println(itemName + " successfully used on Magic Notepaper.");
+                // Mark the item as noted
+                notedItemsTracker.put(itemName.toLowerCase(), true);
             } else {
                 println("Failed to use " + itemName + " on Magic Notepaper.");
             }
@@ -463,6 +474,7 @@ public class SkeletonScript extends LoopingScript {
     public List<String> getTargetNames() {
         return new ArrayList<>(targetNames); // Return a copy to avoid modification
     }
+
     private static Coordinate initialPlayerCoord = null;
     private long lastPrintTime = 0;
 
@@ -471,23 +483,9 @@ public class SkeletonScript extends LoopingScript {
             return;
         }
 
-        // Set the initial player coordinate if it hasn't been set
         if (initialPlayerCoord == null) {
             initialPlayerCoord = Self.getCoordinate();
             println("Initial player coordinate set to: " + initialPlayerCoord);
-        }
-        long currentTime = System.currentTimeMillis();
-
-        // Check if 30 seconds have passed since the last print
-        if (currentTime - lastPrintTime >= 30000) { // 30000 milliseconds = 30 seconds
-            println("Attack radius = " + getAttackRadius() + " from initial coords: " + initialPlayerCoord);
-            lastPrintTime = currentTime; // Update the last print time
-        }
-        if (Self.getCoordinate().distanceTo(initialPlayerCoord) > getAttackRadius()) {
-            // Log the action of moving back to the initial position
-            println("Outside of attack radius, moving back to initial coordinates: " + initialPlayerCoord);
-            // Command to move the player back to the initial coordinates
-            Movement.walkTo(initialPlayerCoord.getRegionX(), initialPlayerCoord.getRegionY(), true);
         }
 
         Npc targetNpc = null;
@@ -528,7 +526,7 @@ public class SkeletonScript extends LoopingScript {
             println("Attacking " + targetNpc.getName());
             targetNpc.interact("Attack");
             lastAttackTime = System.currentTimeMillis();
-            waitingForAttackCompletion = true; // Start waiting for completion
+            waitingForAttackCompletion = true;
         }
     }
 
@@ -608,13 +606,11 @@ public class SkeletonScript extends LoopingScript {
 
 
     private void LootAll() {
-        // First, check if there are any ground items to collect.
         EntityResultSet<GroundItem> groundItems = GroundItemQuery.newQuery().results();
         if (groundItems.isEmpty()) {
-            return; // Exit the method early if there are no items to loot.
+            return;
         }
 
-        // Proceed with the delay before interacting with the Loot All component.
         Execution.delay(RandomGenerator.nextInt(1500, 2000));
 
         ComponentQuery lootAllQuery = ComponentQuery.newQuery(1622);
@@ -623,7 +619,6 @@ public class SkeletonScript extends LoopingScript {
         if (!components.isEmpty() && components.get(0).interact(1)) {
             println("Successfully interacted with Loot All.");
             Execution.delay(RandomGenerator.nextInt(806, 1259));
-            // Additional logic here, if needed, after successful interaction.
         }
     }
 
@@ -638,45 +633,65 @@ public class SkeletonScript extends LoopingScript {
         }
     }
 
-    private void LootFromInterfaces() {
+    private void processLooting() {
         if (!scriptRunning) {
             return;
         }
-        if (Interfaces.isOpen(1622)) {
-            interactWithInventoryItems();
-        } else {
-            // If interface 1622 is not open, attempt to interact with ground items first.
-            List<String> availableItems = getAvailableItems();
-            for (String itemName : availableItems) {
-                if (targetItemNames.stream().anyMatch(targetItemName -> itemName.toLowerCase().contains(targetItemName.toLowerCase()))) {
-                    GroundItem groundItem = GroundItemQuery.newQuery().name(itemName).results().first();
-                    if (groundItem != null && groundItem.interact("Take")) {
-                        println("Interacted with: " + itemName + " on the ground as Loot interface is not open.");
-                        Execution.delayUntil(10000, () -> Interfaces.isOpen(1622));
-                        interactWithInventoryItems(); // Now, interact with the inventory items.
-                        break; // Assuming only one item needs interaction per loot action.
-                    }
-                }
-            }
+
+        if (Backpack.isFull()) {
+            println("Backpack is full. Cannot loot more items.");
+            return;
         }
+
+        if (Interfaces.isOpen(1622)) {
+            lootFromInventory();
+        } else {
+            lootFromGround();
+        }
+
+        println("Looting process completed. Continuing with other actions...");
     }
 
-    private void interactWithInventoryItems() {
-        // Assuming 773 is the id for the inventory where items are to be interacted with.
-        InventoryItemQuery.newQuery(773).results().stream()
-                .filter(item -> targetItemNames.stream()
-                        .anyMatch(targetItemName -> item.getName().toLowerCase().contains(targetItemName.toLowerCase())))
-                .findFirst()
-                .ifPresent(item -> {
-                    int itemSlot = item.getSlot(); // Obtain the slot of the item.
-                    // Attempt to interact with the item using MiniMenu.
-                    if (MiniMenu.interact(ComponentAction.COMPONENT.getType(), 1, itemSlot, 106299403)) {
-                        println("Interacted with Loot Interface item: " + item.getName());
-                        Execution.delayUntil(5000, () -> !Interfaces.isOpen(1622)); // Adjust based on the action's completion.
-                        Execution.delay(RandomGenerator.nextInt(750, 1250));
-                    }
-                });
+    private void lootFromInventory() {
+        if (targetItemNames.isEmpty()) {
+            println("No target items specified for looting.");
+            return;
+        }
+
+        Optional<Item> targetItem = InventoryItemQuery.newQuery(773).results().stream()
+                .filter(item -> targetItemNames.stream().anyMatch(name -> item.getName().toLowerCase().contains(name.toLowerCase())))
+                .findFirst();
+
+        if (targetItem.isPresent()) {
+            MiniMenu.interact(ComponentAction.COMPONENT.getType(), 1, targetItem.get().getSlot(), 106299403);
+            println("Interacted with Loot Interface item: " + targetItem.get().getName());
+            Execution.delay(RandomGenerator.nextInt(400, 750));
+        }
+
     }
+
+    private void lootFromGround() {
+        if (targetItemNames.isEmpty()) {
+            println("No target items specified for looting.");
+            return;
+        }
+
+        Optional<GroundItem> targetGroundItem = GroundItemQuery.newQuery()
+                .name(targetItemNames.toArray(new String[0]))
+                .results()
+                .stream()
+                .findFirst();
+
+        if (targetGroundItem.isPresent()) {
+            GroundItem groundItem = targetGroundItem.get();
+            if (groundItem.interact("Take")) {
+                println("Interacted with: " + groundItem.getName() + " on the ground as Loot interface is not open.");
+                Execution.delay(5000);
+            }
+        }
+
+    }
+
 
     private void collectAllTargetItems(List<String> targetKeywords) {
         List<String> availableItems = getAvailableItems();
@@ -710,9 +725,8 @@ public class SkeletonScript extends LoopingScript {
     private void collect(List<String> itemNames) {
         if (System.currentTimeMillis() < nextRetryTime) return;
 
-        Player localPlayer = Client.getLocalPlayer();
-        if (localPlayer != null && ((double) localPlayer.getCurrentHealth() / localPlayer.getMaximumHealth()) < 0.4) {
-            return; // Check player's health before proceeding
+        if (Self != null && ((double) Self.getCurrentHealth() / Self.getMaximumHealth()) < 0.15) {
+            return;
         } else if (Backpack.isFull()) {
             manageFullBackpack();
             nextRetryTime = System.currentTimeMillis() + RandomGenerator.nextInt(1000, 2000);
@@ -787,7 +801,6 @@ public class SkeletonScript extends LoopingScript {
         }
     }
 
-    // Method to start the pickup attempt with a 30-second timeout
     private void startPickUpAttempt(GroundItem groundItem) {
         long endTime = System.currentTimeMillis() + 30000; // 30 seconds from now
         attemptToPickUpGroundItem(groundItem, endTime);
@@ -1742,6 +1755,26 @@ public class SkeletonScript extends LoopingScript {
         }
     }
 
+    private void CharmingPotion() {
+        ComponentQuery Charming = ComponentQuery.newQuery(284).spriteId(48986);
+        if (Self != null) {
+            if (Charming.results().isEmpty()) {
+                ResultSet<Item> items = InventoryItemQuery.newQuery(93).results();
+                Item charmingpotion = items.stream()
+                        .filter(item -> item.getName() != null && item.getName().toLowerCase().contains("charming"))
+                        .findFirst()
+                        .orElse(null);
+
+                if (charmingpotion != null) {
+                    Backpack.interact(charmingpotion.getName(), "Drink");
+                    println("Drinking " + charmingpotion.getName());
+                } else {
+                    println("No Charming variants found!");
+                }
+            }
+        }
+    }
+
     private boolean isantifireActive() {
         Component necromancy = ComponentQuery.newQuery(284) // Assuming this interface ID is correct; adjust if necessary
                 .spriteId(30093) // Updated sprite ID for Necromancy
@@ -1917,7 +1950,7 @@ public class SkeletonScript extends LoopingScript {
     private void manageAncientElven() {
         if (getLocalPlayer() != null) {
 
-            int currentPrayerPoints = LocalPlayer.LOCAL_PLAYER.getPrayerPoints();
+            int currentPrayerPoints = Self.getPrayerPoints();
 
             if (currentPrayerPoints < prayerPointsThreshold && !hasComponentWithSpriteId(291)) {
                 InventoryItemQuery.newQuery(93).name("Ancient elven ritual shard").results();
