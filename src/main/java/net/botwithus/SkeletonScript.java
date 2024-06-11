@@ -2,6 +2,7 @@ package net.botwithus;
 
 import net.botwithus.api.game.hud.inventories.Backpack;
 import net.botwithus.api.game.hud.inventories.Equipment;
+import net.botwithus.api.game.hud.inventories.LootInventory;
 import net.botwithus.rs3.events.impl.InventoryUpdateEvent;
 import net.botwithus.rs3.game.Distance;
 import net.botwithus.rs3.game.js5.types.configs.ConfigManager;
@@ -16,8 +17,6 @@ import net.botwithus.rs3.game.hud.interfaces.Component;
 import net.botwithus.rs3.game.hud.interfaces.Interfaces;
 import net.botwithus.rs3.game.minimenu.actions.ComponentAction;
 import net.botwithus.rs3.game.minimenu.actions.SelectableAction;
-import net.botwithus.rs3.game.movement.Movement;
-import net.botwithus.rs3.game.movement.NavPath;
 import net.botwithus.rs3.game.queries.builders.animations.SpotAnimationQuery;
 import net.botwithus.rs3.game.queries.builders.characters.NpcQuery;
 import net.botwithus.rs3.game.queries.builders.components.ComponentQuery;
@@ -107,6 +106,8 @@ public class SkeletonScript extends LoopingScript {
     boolean InvokeDeath;
     boolean buryBones;
     boolean useCharming;
+    boolean enableGhost;
+    private Random random = new Random();
 
     static int[] membersWorlds = new int[]{
             1, 2, 4, 5, 6, 9, 10, 12, 14, 15,
@@ -125,10 +126,10 @@ public class SkeletonScript extends LoopingScript {
         loadConfiguration();
         this.sgc = new SkeletonScriptGraphicsContext(getConsole(), this);
         super.initialize();
-        this.isBackgroundScript = true;
+        this.isBackgroundScript = false;
 
         /*isBackgroundScript = true;*/
-        this.loopDelay = RandomGenerator.nextInt(1200, 1800);
+        this.loopDelay = RandomGenerator.nextInt(300, 600);
         this.sgc = new SkeletonScriptGraphicsContext(getConsole(), this);
         this.runStartTime = System.currentTimeMillis();
         subscribe(InventoryUpdateEvent.class, this::onInventoryUpdate);
@@ -159,16 +160,16 @@ public class SkeletonScript extends LoopingScript {
             println("Attempted to stop script, but it is not running.");
         }
     }
-
-
-
     @Override
     public void onLoop() {
+        LocalPlayer player = Client.getLocalPlayer();
         if (getLocalPlayer() != null && Client.getGameState() == Client.GameState.LOGGED_IN && !scriptRunning) {
             return;
         }
+        if (enableGhost)
+            CastGhost();
         if (buryBones) {
-            handleBonesAndAshes();
+            Execution.delay(handleBonesAndAshes());
         }
         if (HopWorlds) {
             WorldHopper();
@@ -225,7 +226,7 @@ public class SkeletonScript extends LoopingScript {
             manageQuickPrayers();
 
         if (eatFood)
-            eatFood();
+            Execution.delay(eatFood(player));
 
         if (UseSmokeBomb)
             UseSmokeCloud();
@@ -315,53 +316,68 @@ public class SkeletonScript extends LoopingScript {
             essenceOfFinality();
 
         if (AttackaTarget)
-            attackTarget();
+            Execution.delay(attackTarget(player));
 
         if (useCharming)
             CharmingPotion();
     }
 
-    private void handleBonesAndAshes() {
-        if (!scriptRunning) {
-            return;
-        }
-
-        boolean itemsHandled = false;
-
-        ResultSet<Item> bones = InventoryItemQuery.newQuery(93).option("Bury").results();
-        if (!bones.isEmpty()) {
-            Item bone = bones.first();
-            assert bone != null;
-            Backpack.interact(bone.getSlot(), "Bury");
-            println("Burying " + bone.getName() + " at slot " + bone.getSlot());
-            itemsHandled = true;
-            Execution.delay(RandomGenerator.nextInt(600, 650));
-        }
-
-        ResultSet<Item> ashes = InventoryItemQuery.newQuery(93).option("Scatter").results();
-        if (!ashes.isEmpty()) {
-            Item ash = ashes.first();
-            assert ash != null;
-            Backpack.interact(ash.getSlot(), "Scatter");
-            println("Scattering " + ash.getName() + " at slot " + ash.getSlot());
-            itemsHandled = true;
-            Execution.delay(RandomGenerator.nextInt(630, 700));
-        }
-
-        if (itemsHandled) {
-            handleBonesAndAshes();
+    private void CastGhost() {
+        if (VarManager.getVarValue(VarDomainType.PLAYER, 11018) == 0) {
+            println("Cast Conjure army: " + ActionBar.useAbility("Conjure Undead Army"));
+            Execution.delay(RandomGenerator.nextInt(600, 1500));
         }
     }
 
-
-    private List<String> targetNames = new ArrayList<>();
-
-    public void addTargetName(String targetName) {
-        println("Adding target name: " + targetName);
-        String lowerCaseName = targetName.toLowerCase();
-        if (!targetNames.contains(lowerCaseName)) {
-            targetNames.add(lowerCaseName);
+    private long handleBonesAndAshes() {
+        // Early exit if script is not running
+        if (!scriptRunning) {
+            println("Script not running. Exiting handleBonesAndAshes.");
+            return random.nextLong(1500, 3000); // Exit with a delay
         }
+
+        // Check if the backpack is full
+        if (Backpack.isFull()) {
+            println("Backpack is full. Cannot process bones and ashes.");
+            return random.nextLong(1500, 3000); // Return early with a delay
+        }
+
+        // Query for bones with "Bury" and ashes with "Scatter" options
+        ResultSet<Item> bones = InventoryItemQuery.newQuery(93).option("Bury").results();
+        ResultSet<Item> ashes = InventoryItemQuery.newQuery(93).option("Scatter").results();
+
+        // If no bones or ashes to handle, return early with a delay
+        if (bones.isEmpty() && ashes.isEmpty()) {
+            return random.nextLong(1500, 3000); // Return longer delay if no items to handle
+        }
+
+        boolean itemsHandled = false; // Flag to indicate if any items were handled
+
+        // Interact with bones if available
+        if (!bones.isEmpty()) {
+            Item bone = bones.first(); // Get the first bone item
+            if (bone != null) { // Ensure it's not null
+                Backpack.interact(bone.getSlot(), "Bury");
+                println("Burying " + bone.getName() + " at slot " + bone.getSlot());
+                itemsHandled = true; // Set the flag if an item was handled
+            }
+        }
+
+        // Interact with ashes if available
+        if (!ashes.isEmpty()) {
+            Item ash = ashes.first(); // Get the first ash item
+            if (ash != null) { // Ensure it's not null
+                Backpack.interact(ash.getSlot(), "Scatter");
+                println("Scattering " + ash.getName() + " at slot " + ash.getSlot());
+                itemsHandled = true; // Set the flag if an item was handled
+            }
+        }
+
+        if (itemsHandled) { // If any items were handled, recursively call handleBonesAndAshes()
+            return handleBonesAndAshes(); // Recursive call to handle more bones or ashes
+        }
+
+        return random.nextLong(630, 700); // Default delay after handling items
     }
 
     private boolean hasPrintedItemMessage = false;
@@ -456,82 +472,89 @@ public class SkeletonScript extends LoopingScript {
             println("Failed to select " + itemName + ".");
         }
     }
+    private final List<String> targetNames = new ArrayList<>(); // Consider using a thread-safe collection if accessed concurrently
 
-    public int getAttackRadius() {
-        return attackRadius;
+    public void addTargetName(String targetName) {
+        println("Adding target name: " + targetName);
+        String lowerCaseName = targetName.toLowerCase(); // Normalize name to lowercase
+        synchronized (targetNames) { // Ensure thread safety for list modification
+            if (!targetNames.contains(lowerCaseName)) {
+                targetNames.add(lowerCaseName);
+            }
+        }
     }
-
-    public void setAttackRadius(int attackRadius) {
-        this.attackRadius = Math.max(1, Math.min(attackRadius, 25)); // Ensure the radius is within 1 to 25 tiles
-        println("Attack radius set to: " + this.attackRadius); // Log the set attack radius
-    }
-
 
     public void removeTargetName(String targetName) {
-        targetNames.remove(targetName.toLowerCase());
+        synchronized (targetNames) {
+            targetNames.remove(targetName.toLowerCase());
+        }
     }
 
     public List<String> getTargetNames() {
-        return new ArrayList<>(targetNames); // Return a copy to avoid modification
-    }
-
-    private static Coordinate initialPlayerCoord = null;
-    private long lastPrintTime = 0;
-
-    private void attackTarget() {
-        if (Self == null) {
-            return;
-        }
-
-        if (initialPlayerCoord == null) {
-            initialPlayerCoord = Self.getCoordinate();
-            println("Initial player coordinate set to: " + initialPlayerCoord);
-        }
-
-        Npc targetNpc = null;
-
-        // Adjust to search within the specified radius from the initial player coordinate
-        for (String target : targetNames) {
-            String targetLower = target.toLowerCase();
-            targetNpc = NpcQuery.newQuery().results().stream()
-                    .filter(npc -> npc.getName().toLowerCase().contains(targetLower))
-                    .filter(npc -> npc.getOptions().contains("Attack"))
-                    .filter(npc -> npc.getCoordinate().distanceTo(initialPlayerCoord) <= getAttackRadius())
-                    .findFirst()
-                    .orElse(null);
-
-            if (targetNpc != null) {
-                break;
-            }
-        }
-
-        // Fallback to any attackable NPC within the radius from the initial player coordinate if no specific target is found
-        if (targetNpc == null) {
-            targetNpc = NpcQuery.newQuery().results().stream()
-                    .filter(npc -> npc.getOptions().contains("Attack"))
-                    .filter(npc -> npc.getCoordinate().distanceTo(initialPlayerCoord) <= getAttackRadius())
-                    .min(Comparator.comparingInt(npc -> (int) npc.distanceTo(getLocalPlayer())))
-                    .orElse(null);
-        }
-
-        if (waitingForAttackCompletion) {
-            if (System.currentTimeMillis() - lastAttackTime > 60000 || !getLocalPlayer().hasTarget()) {
-                waitingForAttackCompletion = false; // Reset the flag
-            } else {
-                return; // Still waiting, exit early
-            }
-        }
-
-        if (targetNpc != null && !getLocalPlayer().hasTarget() && targetNpc.getCurrentHealth() > 100) {
-            println("Attacking " + targetNpc.getName());
-            targetNpc.interact("Attack");
-            lastAttackTime = System.currentTimeMillis();
-            waitingForAttackCompletion = true;
+        synchronized (targetNames) { // Synchronize access to prevent concurrent modification issues
+            return new ArrayList<>(targetNames); // Return a copy to avoid direct modification
         }
     }
 
-    private long lastAttackTime = -1; // -1 indicates no attack has been initiated
-    private boolean waitingForAttackCompletion = false;
+    private Pattern generateRegexPattern(List<String> names) {
+        return Pattern.compile(
+                names.stream()
+                        .map(Pattern::quote)
+                        .reduce((name1, name2) -> name1 + "|" + name2)
+                        .orElse(""),
+                Pattern.CASE_INSENSITIVE
+        );
+    }
+
+    public long attackTarget(LocalPlayer player) {
+        if (player == null) { // Null check for safety
+            println("[attackTarget] Local player not found.");
+            return random.nextLong(1500, 3000); // Return delay to avoid rapid retries
+        }
+
+        if (player.hasTarget()) { // Check if the player already has a target
+            return random.nextLong(1500, 3000); // Return delay if already targeting
+        }
+        if (player.isMoving()) {
+            return random.nextLong(1500, 3000);
+        }
+
+        List<String> targetNamesCopy = getTargetNames(); // Use a copy for thread safety
+
+        if (targetNamesCopy.isEmpty()) { // No target names
+            println("[attackTarget] No target names provided.");
+            return random.nextLong(1500, 3000); // Return delay if no targets
+        }
+
+        // Generate regex pattern for targeting NPCs
+        Pattern monsterPattern = generateRegexPattern(targetNamesCopy);
+
+        // Find the nearest NPC matching the given conditions
+        Npc monster = NpcQuery.newQuery()
+                .name(monsterPattern) // Use regex pattern
+                .isReachable() // Ensure it's reachable
+                .health(100, 1_000_000) // Health range
+                .option("Attack") // Must have 'Attack' option
+                .results()
+                .nearestTo(player.getCoordinate()); // Nearest to player
+
+        if (monster == null || monster.getCurrentHealth() <= 0) { // Validate NPC
+            println("[attackTarget] No valid NPC target found.");
+            return random.nextLong(1500, 3000); // Return delay if no valid target
+        }
+
+        boolean attack = monster.interact("Attack"); // Attempt to attack
+
+        if (attack) { // Check if attack was successful
+            println("[attackTarget] Successfully attacked " + monster.getName() + ".");
+            return random.nextLong(105, 600); // Return delay for realism
+        } else {
+            println("[attackTarget] Failed to attack " + monster.getName() + ".");
+            return random.nextLong(1500, 3000); // Return delay on failure
+        }
+    }
+
+
 
 
     private List<String> targetItemNames = new ArrayList<>();
@@ -564,9 +587,6 @@ public class SkeletonScript extends LoopingScript {
 
     private void lootInterface() {
         EntityResultSet<GroundItem> groundItems = GroundItemQuery.newQuery().results();
-        if (!scriptRunning) {
-            return;
-        }
         if (groundItems.isEmpty()) {
             return;
         }
@@ -623,20 +643,32 @@ public class SkeletonScript extends LoopingScript {
     }
 
     private void LootEverything() {
-        if (InteractWithLootAll) {
             if (Interfaces.isOpen(1622)) {
                 LootAll();
             } else {
                 lootInterface();
                 Execution.delayUntil(10000, () -> Interfaces.isOpen(1622));
-            }
         }
     }
 
+
+    private boolean canLoot() {
+        return !targetItemNames.isEmpty(); // Can be expanded with additional conditions
+    }
+
+    // Generates a regex pattern from a list of target item names
+    private Pattern generateLootPattern(List<String> names) {
+        return Pattern.compile(
+                names.stream()
+                        .map(Pattern::quote) // Safely escape regex special characters
+                        .reduce((name1, name2) -> name1 + "|" + name2) // Join with 'or' logic
+                        .orElse(""), // Default to empty pattern if no names
+                Pattern.CASE_INSENSITIVE // Case-insensitive matching
+        );
+    }
+
+    // Loot items from inventory using regex pattern matching
     private void processLooting() {
-        if (!scriptRunning) {
-            return;
-        }
 
         if (Backpack.isFull()) {
             println("Backpack is full. Cannot loot more items.");
@@ -648,48 +680,64 @@ public class SkeletonScript extends LoopingScript {
         } else {
             lootFromGround();
         }
-
-        println("Looting process completed. Continuing with other actions...");
     }
-
     private void lootFromInventory() {
-        if (targetItemNames.isEmpty()) {
-            println("No target items specified for looting.");
+        if (!canLoot()) { // Check if looting is possible
+            println("[LootFromInventory] No target items specified for looting.");
             return;
         }
 
-        Optional<Item> targetItem = InventoryItemQuery.newQuery(773).results().stream()
-                .filter(item -> targetItemNames.stream().anyMatch(name -> item.getName().toLowerCase().contains(name.toLowerCase())))
-                .findFirst();
+        // Create regex pattern from target item names
+        Pattern lootPattern = generateLootPattern(targetItemNames);
 
-        if (targetItem.isPresent()) {
-            MiniMenu.interact(ComponentAction.COMPONENT.getType(), 1, targetItem.get().getSlot(), 106299403);
-            println("Interacted with Loot Interface item: " + targetItem.get().getName());
-            Execution.delay(RandomGenerator.nextInt(400, 750));
+        // Get all items from the loot inventory
+        List<Item> inventoryItems = LootInventory.getItems();
+
+        for (Item item : inventoryItems) {
+            if (item.getName() == null) { // Ignore items without names
+                continue;
+            }
+
+            // Check if the item name matches the regex pattern
+            Matcher matcher = lootPattern.matcher(item.getName());
+            if (matcher.matches()) { // If there's a match, loot the item
+                LootInventory.take(item.getName());
+                println("[LootFromInventory] Successfully looted item: " + item.getName());
+            }
         }
-
     }
 
     private void lootFromGround() {
-        if (targetItemNames.isEmpty()) {
-            println("No target items specified for looting.");
+        if (targetItemNames.isEmpty()) { // If no target items, exit early
+            println("[LootFromGround] No target items specified for looting.");
             return;
         }
 
+        if (LootInventory.isOpen()) { // If loot interface is open, exit early
+            println("[LootFromGround] Loot interface is open, skipping ground looting.");
+            return;
+        }
+
+        // Create regex pattern from target item names
+        Pattern lootPattern = generateLootPattern(targetItemNames);
+
+        // Find ground items matching the regex pattern
         Optional<GroundItem> targetGroundItem = GroundItemQuery.newQuery()
-                .name(targetItemNames.toArray(new String[0]))
-                .results()
+                .results() // Retrieve all ground items
                 .stream()
-                .findFirst();
+                .filter(groundItem -> groundItem.getName() != null) // Ensure item has a name
+                .filter(groundItem -> lootPattern.matcher(groundItem.getName()).matches()) // Match with regex pattern
+                .findFirst(); // Get the first matching ground item
 
         if (targetGroundItem.isPresent()) {
             GroundItem groundItem = targetGroundItem.get();
-            if (groundItem.interact("Take")) {
-                println("Interacted with: " + groundItem.getName() + " on the ground as Loot interface is not open.");
-                Execution.delay(5000);
+            if (groundItem.interact("Take")) { // Attempt to take the ground item
+                println("[lootFromGround] Interacted with: " + groundItem.getName() + " on the ground.");
+                Execution.delay(5000); // Delay to simulate the interaction
             }
+        } else {
+            println("[lootFromGround] No matching ground items found.");
         }
-
     }
 
 
@@ -812,7 +860,7 @@ public class SkeletonScript extends LoopingScript {
         if (!foodItems.isEmpty()) {
             Item food = foodItems.first();
             if (food != null) {
-                eatFood(food);
+                Execution.delay(eatFood(food));
             }
         } else {
             println("No food to eat, retreating and stopping script." + ActionBar.useAbility("War's Retreat Teleport"));
@@ -820,7 +868,10 @@ public class SkeletonScript extends LoopingScript {
         }
     }
 
-    private void eatFood(Item food) {
+    private long eatFood(Item food) {
+        if (getLocalPlayer().getAnimationId() == 18001) {
+            return random.nextLong(100, 500);
+        }
         println("Attempting to eat " + food.getName());
         boolean success = Backpack.interact(food.getName(), 1);
         if (success) {
@@ -830,6 +881,7 @@ public class SkeletonScript extends LoopingScript {
             println("Failed to eat " + food.getName());
             Execution.delayUntil(RandomGenerator.nextInt(500, 1000), () -> !Backpack.isFull());
         }
+        return random.nextLong(100, 500);
     }
 
     private void attemptToPickUpItemOnSpotAnimation(SpotAnimation spotAnimation) {
@@ -854,7 +906,7 @@ public class SkeletonScript extends LoopingScript {
         Player localPlayer = Client.getLocalPlayer();
         if (localPlayer != null) {
             int currentPrayerPoints = LocalPlayer.LOCAL_PLAYER.getPrayerPoints();
-            if (currentPrayerPoints < prayerPointsThreshold) {
+            if (currentPrayerPoints < 1000) {
                 ResultSet<Item> items = InventoryItemQuery.newQuery(93).results();
 
                 Item prayerOrRestorePot = items.stream()
@@ -1145,29 +1197,67 @@ public class SkeletonScript extends LoopingScript {
         return getLocalPlayer().inCombat();
     }
 
-    public void eatFood() {
-        if (getLocalPlayer() != null) {
-            if (getLocalPlayer().getCurrentHealth() * 100 / getLocalPlayer().getMaximumHealth() < healthThreshold) {
-                ResultSet<Item> food = InventoryItemQuery.newQuery(93).option("Eat").results();
-                if (!food.isEmpty()) {
-                    Item eat = food.first();
-                    assert eat != null;
-                    Backpack.interact(eat.getName(), 1);
-                    println("Eating " + eat.getName());
-                    Execution.delayUntil(RandomGenerator.nextInt(300, 500), () -> getLocalPlayer().getCurrentHealth() > 8000);
+    public long eatFood(LocalPlayer player) {
+        if (player == null) {
+            return random.nextLong(100, 200);
+        }
+        long delay = random.nextLong(100, 200);
+
+        boolean isPlayerEating = player.getAnimationId() == 18001;
+        double healthPercentage = calculateHealthPercentage(player);
+        boolean isHealthAboveThreshold = healthPercentage > healthThreshold;
+
+        if (isPlayerEating || isHealthAboveThreshold) {
+            return delay;
+        }
+
+        healHealth();
+
+        return delay;
+    }
+
+    private void healHealth() {
+        ResultSet<Item> foodItems = InventoryItemQuery.newQuery(93).option("Eat").results();
+        Item food = foodItems.isEmpty() ? null : foodItems.first();
+
+        if (food == null) {
+            println("[healHealth] No food found.");
+
+            if (teleportToWarOnHealth) {
+                if (ActionBar.containsAbility("War's Retreat Teleport")) {
+                    println("[healHealth] Teleporting to War's Retreat.");
+                    ActionBar.useAbility("War's Retreat Teleport");
+                    stopScript();
                 } else {
-                    println("No food found!");
-                    if (teleportToWarOnHealth) {
-                        ActionBar.useAbility("War's Retreat Teleport");
-                        stopScript();
-                    }
+                    println("[healHealth] 'War's Retreat Teleport' not found on the action bar.");
                 }
             }
+
+            return;
+        }
+
+        boolean eatSuccess = Backpack.interact(food.getName(), "Eat");
+
+        if (eatSuccess) {
+            println("[healHealth] Successfully ate " + food.getName());
+            Execution.delay(RandomGenerator.nextInt(250, 450));
+        } else {
+            println("[healHealth] Failed to eat.");
         }
     }
 
+    public double calculateHealthPercentage(LocalPlayer player) {
+        double currentHealth = player.getCurrentHealth();
+        double maximumHealth = player.getMaximumHealth();
+
+        if (maximumHealth == 0) {
+            throw new ArithmeticException("Maximum health cannot be zero.");
+        }
+
+        return (currentHealth / maximumHealth) * 100;
+    }
+
     private void useVulnBomb() {
-        if (UseVulnBomb) {
             if (getLocalPlayer() != null && getLocalPlayer().inCombat()) {
                 if (getLocalPlayer().getTarget() != null) {
                     int vulnDebuffVarbit = VarManager.getVarbitValue(1939);
@@ -1186,11 +1276,9 @@ public class SkeletonScript extends LoopingScript {
                     println("No target NPC found.");
                 }
             }
-        }
     }
 
     private void UseSmokeCloud() {
-        if (UseSmokeBomb) {
             if (getLocalPlayer() != null && getLocalPlayer().inCombat()) {
                 if (getLocalPlayer().getTarget() != null) {
                     int debuffVarbit = VarManager.getVarbitValue(49448);
@@ -1208,7 +1296,6 @@ public class SkeletonScript extends LoopingScript {
                     println("No target NPC found.");
                 }
             }
-        }
     }
 
     public static int NecrosisStacksThreshold = 12;
@@ -1240,7 +1327,7 @@ public class SkeletonScript extends LoopingScript {
 
                 if (getLocalPlayer().getAdrenaline() >= 350 && getLocalPlayer().getFollowing() != null && getLocalPlayer().getFollowing().getCurrentHealth() >= 500 && ComponentQuery.newQuery(291).spriteId(55480).results().isEmpty() && getLocalPlayer().hasTarget()) {
                     println("Used Death Essence: " + ActionBar.useAbility("Weapon Special Attack"));
-                    Execution.delayUntil(RandomGenerator.nextInt(2400, 3000), () -> ComponentQuery.newQuery(291).spriteId(55480).results().isEmpty());
+                    Execution.delay(RandomGenerator.nextInt(600, 1500));
                 }
             }
         }
@@ -1265,8 +1352,8 @@ public class SkeletonScript extends LoopingScript {
     private void Deathmark() {
         if (Self != null) {
             if (VarManager.getVarbitValue(53247) == 0 && getLocalPlayer().getFollowing() != null && getLocalPlayer().getFollowing().getCurrentHealth() >= 500 && ActionBar.getCooldownPrecise("Invoke Death") == 0 && getLocalPlayer().hasTarget()) {
-                println("Used Invoke: " + ActionBar.useAbility("Invoke Death"));
-                Execution.delayUntil(RandomGenerator.nextInt(2400, 3000), () -> VarManager.getVarbitValue(53247) == 0);
+                println("Used Invoke Death: " + ActionBar.useAbility("Invoke Death"));
+                Execution.delay(RandomGenerator.nextInt(600, 1500));
             }
         }
     }
@@ -1984,9 +2071,10 @@ public class SkeletonScript extends LoopingScript {
 
 
     public static void HopWorlds(int world) {
+        ScriptConsole.println("Interacting with the Settings button");
         MiniMenu.interact(ComponentAction.COMPONENT.getType(), 1, 7, 93782016);
         boolean WorldPage = Execution.delayUntil(5000, () -> Interfaces.isOpen(1433));
-        Execution.delay(RandomGenerator.nextInt(1500, 2000));
+        Execution.delay(RandomGenerator.nextInt(600, 1000));
 
         if (WorldPage) {
             Component HopWorldsMenu = ComponentQuery.newQuery(1433).componentIndex(65).results().first();
@@ -1994,7 +2082,7 @@ public class SkeletonScript extends LoopingScript {
                 MiniMenu.interact(ComponentAction.COMPONENT.getType(), 1, -1, 93913153);
                 ScriptConsole.println("Hop Worlds Button Clicked.");
                 boolean worldSelectOpen = Execution.delayUntil(5000, () -> Interfaces.isOpen(1587));
-                Execution.delay(RandomGenerator.nextInt(1500, 2000));
+                Execution.delay(RandomGenerator.nextInt(600, 1000));
 
                 if (worldSelectOpen) {
                     MiniMenu.interact(ComponentAction.COMPONENT.getType(), 2, world, 104005640);

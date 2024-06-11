@@ -174,6 +174,10 @@ public class SkeletonScriptGraphicsContext extends ScriptGraphicsContext {
                     } else if (SkeletonScript.VolleyOfSoulsThreshold > 5) {
                         SkeletonScript.VolleyOfSoulsThreshold = 5;
                     }
+                    script.enableGhost = ImGui.Checkbox("Enable Constant Undead Army", script.enableGhost);
+                    if (ImGui.IsItemHovered()) {
+                        ImGui.SetTooltip("will summon undead army if not preset");
+                    }
                     script.Essence = ImGui.Checkbox("OmniGuard Special Attack", script.Essence);
                     if (ImGui.IsItemHovered()) {
                         ImGui.SetTooltip("Have on Action Bar");
@@ -275,7 +279,6 @@ public class SkeletonScriptGraphicsContext extends ScriptGraphicsContext {
                 }
                 if (ImGui.BeginTabItem("Loot Options", ImGuiWindowFlag.None.getValue())) {
                     ImGui.SeparatorText("Loot Options");
-                    // Use Single Loot Checkbox
                     boolean tempUseLoot = script.useLoot;
                     script.useLoot = ImGui.Checkbox("Use Single Loot", script.useLoot);
                     if (script.useLoot && script.useLoot != tempUseLoot) {
@@ -289,7 +292,7 @@ public class SkeletonScriptGraphicsContext extends ScriptGraphicsContext {
                     ImGui.SameLine();
 
 // Use Loot Interface Checkbox
-                   /* boolean tempUseLootInterface = script.useLootInterface;
+                    boolean tempUseLootInterface = script.useLootInterface;
                     script.useLootInterface = ImGui.Checkbox("Use Loot Interface", script.useLootInterface);
                     if (script.useLootInterface && script.useLootInterface != tempUseLootInterface) {
                         script.useLoot = false;
@@ -299,7 +302,7 @@ public class SkeletonScriptGraphicsContext extends ScriptGraphicsContext {
                         ImGui.SetTooltip("Will open loot interface to loot items on the list below.");
                     }
 
-                    ImGui.SameLine();*/
+                    ImGui.SameLine();
 
 // Loot All Checkbox
                     boolean tempInteractWithLootAll = script.InteractWithLootAll;
@@ -314,12 +317,12 @@ public class SkeletonScriptGraphicsContext extends ScriptGraphicsContext {
 
                     ImGui.SeparatorText("Items to Pickup");
 
-                    this.selectedItem = ImGui.InputText("Item name", this.selectedItem);
+                    this.selectedItem = ImGui.InputText("Item name", selectedItem);
 
-                    if (ImGui.Button("Add Item") && !this.selectedItem.isEmpty()) {
-                        if (!this.script.getTargetItemNames().contains(this.selectedItem)) {
-                            this.script.println("Adding \"" + this.selectedItem + "\" to target items.");
-                            this.script.addItemName(this.selectedItem);
+                    if (ImGui.Button("Add Item") && !selectedItem.isEmpty()) {
+                        if (!script.getTargetItemNames().contains(selectedItem)) {
+                            script.println("Adding \"" + selectedItem + "\" to target items.");
+                            script.addItemName(selectedItem);
                             this.selectedItem = "";
                         }
                     }
@@ -333,19 +336,19 @@ public class SkeletonScriptGraphicsContext extends ScriptGraphicsContext {
                     }
 
 
-                    if (!this.script.getTargetItemNames().isEmpty()) {
+                    if (!script.getTargetItemNames().isEmpty()) {
                         if (ImGui.BeginChild("Items List", 0, 100, true, 0)) {
                             int itemsPerLine = 6;
                             int itemCount = 0; // Counter for items displayed so far
 
-                            for (String itemName : new ArrayList<>(this.script.getTargetItemNames())) {
+                            for (String itemName : new ArrayList<>(script.getTargetItemNames())) {
                                 if (itemCount % itemsPerLine != 0) {
                                     ImGui.SameLine();
                                 }
 
                                 if (ImGui.Button(itemName)) {
-                                    this.script.println("Removing \"" + itemName + "\" from target items.");
-                                    this.script.removeItemName(itemName);
+                                    script.println("Removing \"" + itemName + "\" from target items.");
+                                    script.removeItemName(itemName);
                                     // Depending on your logic, you may want to break here,
                                     // but be cautious of concurrent modification issues.
                                 }
@@ -412,24 +415,24 @@ public class SkeletonScriptGraphicsContext extends ScriptGraphicsContext {
 
 // Button to add the item to the list
                     if (ImGui.Button("Add Item to Notepaper List") && !this.selectedItemToUseOnNotepaper.isEmpty()) {
-                        if (!this.script.getItemNamesToUseOnNotepaper().contains(this.selectedItemToUseOnNotepaper)) {
-                            this.script.addItemNameToUseOnNotepaper(this.selectedItemToUseOnNotepaper);
+                        if (!script.getItemNamesToUseOnNotepaper().contains(this.selectedItemToUseOnNotepaper)) {
+                            script.addItemNameToUseOnNotepaper(this.selectedItemToUseOnNotepaper);
                             this.selectedItemToUseOnNotepaper = ""; // Clear the input field after adding
                         }
                     }
 
 // Display the list of items to use on Magic Notepaper within a scrollable child window
-                    if (!this.script.getItemNamesToUseOnNotepaper().isEmpty()) {
+                    if (!script.getItemNamesToUseOnNotepaper().isEmpty()) {
                         if (ImGui.BeginChild("Items to Use on Notepaper List", 0, 100, true, ImGuiWindowFlag.None.getValue())) {
                             int itemCount = 0;
-                            for (String itemName : new ArrayList<>(this.script.getItemNamesToUseOnNotepaper())) {
+                            for (String itemName : new ArrayList<>(script.getItemNamesToUseOnNotepaper())) {
                                 if (itemCount % 6 != 0) {
                                     ImGui.SameLine();
                                 }
                                 itemCount++;
 
                                 if (ImGui.Button(itemName)) {
-                                    this.script.removeItemNameToUseOnNotepaper(itemName);
+                                    script.removeItemNameToUseOnNotepaper(itemName);
                                     break;
                                 }
 
@@ -489,7 +492,7 @@ public class SkeletonScriptGraphicsContext extends ScriptGraphicsContext {
                     if (ImGui.IsItemHovered()) {
                         ImGui.SetTooltip("Will not world hop in certain scenarios, e.g. in combat, in a dungeon, etc.");
                     }
-                    long timeRemaining = nextWorldHopTime - System.currentTimeMillis();
+                    long timeRemaining = SkeletonScript.nextWorldHopTime - System.currentTimeMillis();
                     if(timeRemaining > 0) {
                         String remainingTimeFormatted = formatTimeRemaining(timeRemaining);
                         ImGui.Text("Next hop in: " + remainingTimeFormatted);
@@ -498,18 +501,18 @@ public class SkeletonScriptGraphicsContext extends ScriptGraphicsContext {
                     }
                     // Inside the drawSettings() method
                     ImGui.Text("World Hop Settings:");
-                    minHopIntervalMinutes = ImGui.InputInt("Min Hop Interval (Minutes)", minHopIntervalMinutes);
-                    if (minHopIntervalMinutes < 1) { // Minimum 1 minute
-                        minHopIntervalMinutes = 1;
-                    } else if (minHopIntervalMinutes > maxHopIntervalMinutes) { // Ensure min is not more than max
-                        minHopIntervalMinutes = maxHopIntervalMinutes;
+                    SkeletonScript.minHopIntervalMinutes = ImGui.InputInt("Min Hop Interval (Minutes)", SkeletonScript.minHopIntervalMinutes);
+                    if (SkeletonScript.minHopIntervalMinutes < 1) { // Minimum 1 minute
+                        SkeletonScript.minHopIntervalMinutes = 1;
+                    } else if (SkeletonScript.minHopIntervalMinutes > SkeletonScript.maxHopIntervalMinutes) { // Ensure min is not more than max
+                        SkeletonScript.minHopIntervalMinutes = SkeletonScript.maxHopIntervalMinutes;
                     }
 
-                    maxHopIntervalMinutes = ImGui.InputInt("Max Hop Interval (Minutes)", maxHopIntervalMinutes);
-                    if (maxHopIntervalMinutes < minHopIntervalMinutes) { // Ensure max is not less than min
-                        maxHopIntervalMinutes = minHopIntervalMinutes;
-                    } else if (maxHopIntervalMinutes > 300) { // Set an upper limit, for example, 300 minutes
-                        maxHopIntervalMinutes = 300;
+                    SkeletonScript.maxHopIntervalMinutes = ImGui.InputInt("Max Hop Interval (Minutes)", SkeletonScript.maxHopIntervalMinutes);
+                    if (SkeletonScript.maxHopIntervalMinutes < SkeletonScript.minHopIntervalMinutes) { // Ensure max is not less than min
+                        SkeletonScript.maxHopIntervalMinutes = SkeletonScript.minHopIntervalMinutes;
+                    } else if (SkeletonScript.maxHopIntervalMinutes > 300) { // Set an upper limit, for example, 300 minutes
+                        SkeletonScript.maxHopIntervalMinutes = 300;
                     }
 
                     if (ImGui.IsItemHovered()) {
