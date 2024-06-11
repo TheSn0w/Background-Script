@@ -48,7 +48,6 @@ import static net.botwithus.rs3.game.Client.getLocalPlayer;
 public class SkeletonScript extends LoopingScript {
     LocalPlayer Self = Client.getLocalPlayer();
     public int attackRadius = 10;
-    boolean Backgroundscript;
     boolean Notepaper;
     boolean HopWorlds;
     boolean useThievingDummy;
