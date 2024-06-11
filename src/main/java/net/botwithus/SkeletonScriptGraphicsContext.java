@@ -5,6 +5,8 @@ import net.botwithus.rs3.imgui.ImGui;
 import net.botwithus.rs3.imgui.ImGuiWindowFlag;
 import net.botwithus.rs3.script.ScriptConsole;
 import net.botwithus.rs3.script.ScriptGraphicsContext;
+import net.botwithus.SkeletonScript;
+
 
 import java.sql.Timestamp;
 import java.time.Instant;
@@ -16,11 +18,10 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 
-import static net.botwithus.SkeletonScript.*;
-import static net.botwithus.SkeletonScript.maxHopIntervalMinutes;
 
 public class SkeletonScriptGraphicsContext extends ScriptGraphicsContext {
-    private SkeletonScript script;
+    public SkeletonScript script;
+
     private String targetName = "";
     private String selectedItemToUseOnNotepaper = "";
     private String selectedItem = "";

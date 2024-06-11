@@ -126,11 +126,8 @@ public class SkeletonScript extends LoopingScript {
         loadConfiguration();
         this.sgc = new SkeletonScriptGraphicsContext(getConsole(), this);
         super.initialize();
-        this.isBackgroundScript = false;
-
-        /*isBackgroundScript = true;*/
+        isBackgroundScript = true;
         this.loopDelay = RandomGenerator.nextInt(300, 600);
-        this.sgc = new SkeletonScriptGraphicsContext(getConsole(), this);
         this.runStartTime = System.currentTimeMillis();
         subscribe(InventoryUpdateEvent.class, this::onInventoryUpdate);
     }
