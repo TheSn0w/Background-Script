@@ -434,35 +434,37 @@ public class SkeletonScript extends LoopingScript {
             return;
         }
 
-        // Retrieve Magic Notepaper from the inventory
+        // Retrieve Magic Notepaper or Enchanted Notepaper from the inventory
         Item notepaper = InventoryItemQuery.newQuery(93)
-                .name("Magic notepaper")
                 .results()
                 .stream()
+                .filter(item -> item.getName().equalsIgnoreCase("Magic notepaper") || item.getName().equalsIgnoreCase("Enchanted notepaper"))
                 .findFirst()
                 .orElse(null);
 
         if (notepaper == null) {
-            println("Magic Notepaper not found in inventory.");
+            println("Neither Magic Notepaper nor Enchanted Notepaper found in inventory.");
             return;
         }
 
-        println("Found " + itemName + " and Magic Notepaper. Preparing to use.");
+        String notepaperName = notepaper.getName(); // Store the name of the notepaper
+
+        println("Found " + itemName + " and " + notepaperName + ". Preparing to use.");
 
         boolean itemSelected = MiniMenu.interact(SelectableAction.SELECTABLE_COMPONENT.getType(), 0, targetItem.getSlot(), 96534533);
         Execution.delay(RandomGenerator.nextInt(500, 750));
 
         if (itemSelected) {
-            println("Using " + itemName + " on Magic Notepaper...");
+            println("Using " + itemName + " on " + notepaperName + "...");
             boolean notepaperSelected = MiniMenu.interact(SelectableAction.SELECT_COMPONENT_ITEM.getType(), 0, notepaper.getSlot(), 96534533);
             Execution.delay(RandomGenerator.nextInt(500, 750));
 
             if (notepaperSelected) {
-                println(itemName + " successfully used on Magic Notepaper.");
+                println(itemName + " successfully used on " + notepaperName + ".");
                 // Mark the item as noted
                 notedItemsTracker.put(itemName.toLowerCase(), true);
             } else {
-                println("Failed to use " + itemName + " on Magic Notepaper.");
+                println("Failed to use " + itemName + " on " + notepaperName + ".");
             }
         } else {
             println("Failed to select " + itemName + ".");
