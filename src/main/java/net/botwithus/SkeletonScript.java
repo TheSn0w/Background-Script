@@ -177,9 +177,7 @@ public class SkeletonScript extends LoopingScript {
             processLooting();
 
         if (Notepaper)
-            for (String itemName : getItemNamesToUseOnNotepaper()) {
-                useItemOnNotepaper(itemName);
-            }
+                useItemOnNotepaper();
 
         if (Essence)
             DeathEssence();
@@ -376,7 +374,6 @@ public class SkeletonScript extends LoopingScript {
         return random.nextLong(630, 700); // Default delay after handling items
     }
 
-    private boolean hasPrintedItemMessage = false;
 
 
     private void onInventoryUpdate(InventoryUpdateEvent event) {
@@ -393,8 +390,6 @@ public class SkeletonScript extends LoopingScript {
                     }
                 });
 
-        // Reset message flag to allow printing in the next interaction attempt
-        hasPrintedItemMessage = false;
     }
 
     public List<String> getItemNamesToUseOnNotepaper() {
@@ -413,61 +408,59 @@ public class SkeletonScript extends LoopingScript {
 
     private final Map<String, Boolean> notedItemsTracker = new HashMap<>();
 
-    public void useItemOnNotepaper(String itemName) {
-        if (notedItemsTracker.getOrDefault(itemName.toLowerCase(), false)) {
-            return; // Item is noted, so we skip this iteration
-        }
-        // Retrieve the item from the inventory using the item's name
-        Item targetItem = InventoryItemQuery.newQuery(93)
-                .name(itemName)
-                .results()
-                .stream()
-                .filter(item -> !Objects.requireNonNull(ConfigManager.getItemType(item.getId())).isNote()) // Ensure item is not noted
-                .findFirst()
-                .orElse(null);
-
-        if (targetItem == null) {
-            if (!hasPrintedItemMessage) {
-                println(itemName + " not found or it is already noted.");
-                hasPrintedItemMessage = true; // Prevent further messages until the inventory updates again
+    public void useItemOnNotepaper() {
+        for (String itemName : itemNamesToUseOnNotepaper) {
+            if (notedItemsTracker.getOrDefault(itemName.toLowerCase(), false)) {
+                continue; // Item is noted, so we skip this iteration
             }
-            return;
-        }
+            // Retrieve the item from the inventory using the item's name
+            Item targetItem = InventoryItemQuery.newQuery(93)
+                    .name(itemName)
+                    .results()
+                    .stream()
+                    .filter(item -> !Objects.requireNonNull(ConfigManager.getItemType(item.getId())).isNote()) // Ensure item is not noted
+                    .findFirst()
+                    .orElse(null);
 
-        // Retrieve Magic Notepaper or Enchanted Notepaper from the inventory
-        Item notepaper = InventoryItemQuery.newQuery(93)
-                .results()
-                .stream()
-                .filter(item -> item.getName().equalsIgnoreCase("Magic notepaper") || item.getName().equalsIgnoreCase("Enchanted notepaper"))
-                .findFirst()
-                .orElse(null);
+            if (targetItem == null) {
+                continue;
+            }
 
-        if (notepaper == null) {
-            println("Neither Magic Notepaper nor Enchanted Notepaper found in inventory.");
-            return;
-        }
+            // Retrieve Magic Notepaper or Enchanted Notepaper from the inventory
+            Item notepaper = InventoryItemQuery.newQuery(93)
+                    .results()
+                    .stream()
+                    .filter(item -> item.getName().equalsIgnoreCase("Magic notepaper") || item.getName().equalsIgnoreCase("Enchanted notepaper"))
+                    .findFirst()
+                    .orElse(null);
 
-        String notepaperName = notepaper.getName(); // Store the name of the notepaper
+            if (notepaper == null) {
+                println("Neither Magic Notepaper nor Enchanted Notepaper found in inventory.");
+                return;
+            }
 
-        println("Found " + itemName + " and " + notepaperName + ". Preparing to use.");
+            String notepaperName = notepaper.getName(); // Store the name of the notepaper
 
-        boolean itemSelected = MiniMenu.interact(SelectableAction.SELECTABLE_COMPONENT.getType(), 0, targetItem.getSlot(), 96534533);
-        Execution.delay(RandomGenerator.nextInt(500, 750));
+            println("Found " + itemName + " and " + notepaperName + ". Preparing to use.");
 
-        if (itemSelected) {
-            println("Using " + itemName + " on " + notepaperName + "...");
-            boolean notepaperSelected = MiniMenu.interact(SelectableAction.SELECT_COMPONENT_ITEM.getType(), 0, notepaper.getSlot(), 96534533);
+            boolean itemSelected = MiniMenu.interact(SelectableAction.SELECTABLE_COMPONENT.getType(), 0, targetItem.getSlot(), 96534533);
             Execution.delay(RandomGenerator.nextInt(500, 750));
 
-            if (notepaperSelected) {
-                println(itemName + " successfully used on " + notepaperName + ".");
-                // Mark the item as noted
-                notedItemsTracker.put(itemName.toLowerCase(), true);
+            if (itemSelected) {
+                println("Using " + itemName + " on " + notepaperName + "...");
+                boolean notepaperSelected = MiniMenu.interact(SelectableAction.SELECT_COMPONENT_ITEM.getType(), 0, notepaper.getSlot(), 96534533);
+                Execution.delay(RandomGenerator.nextInt(500, 750));
+
+                if (notepaperSelected) {
+                    println(itemName + " successfully used on " + notepaperName + ".");
+                    // Mark the item as noted
+                    notedItemsTracker.put(itemName.toLowerCase(), true);
+                } else {
+                    println("Failed to use " + itemName + " on " + notepaperName + ".");
+                }
             } else {
-                println("Failed to use " + itemName + " on " + notepaperName + ".");
+                println("Failed to select " + itemName + ".");
             }
-        } else {
-            println("Failed to select " + itemName + ".");
         }
     }
     private final List<String> targetNames = new ArrayList<>(); // Consider using a thread-safe collection if accessed concurrently
