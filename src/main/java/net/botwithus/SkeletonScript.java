@@ -761,9 +761,9 @@ public class SkeletonScript extends LoopingScript {
 
         for (Item item : inventoryItems) {
             if (item.getName() != null && lootPattern.matcher(item.getName()).find()) {
-                LootInventory.take(item.getName());
                 ScriptConsole.println("[Loot] Successfully looted item: " + item.getName());
                 Execution.delay(RandomGenerator.nextInt(550, 650));
+                LootInventory.take(item.getName());
                 if (Notepaper) {
                     useItemOnNotepaper();
                 }
