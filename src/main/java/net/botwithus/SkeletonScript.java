@@ -770,6 +770,7 @@ public class SkeletonScript extends LoopingScript {
             }
         }
     }
+    //test
 
     public static void lootFromGround() {
         if (targetItemNames.isEmpty()) {
