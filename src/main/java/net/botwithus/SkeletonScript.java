@@ -766,7 +766,6 @@ public class SkeletonScript extends LoopingScript {
                 if (Notepaper) {
                     useItemOnNotepaper();
                 }
-                break;
             }
         }
     }
