@@ -745,32 +745,53 @@ public class SkeletonScript extends LoopingScript {
         }
 
         if (Interfaces.isOpen(1622)) {
-            lootFromInventory();
+            Execution.delay(lootFromInventory());
         } else {
             lootFromGround();
         }
     }
-    public static void lootFromInventory() {
+    public static long lootFromInventory() {
         if (Backpack.isFull()) {
-            ScriptConsole.println("[Error] Cant loot or Backpack is full.");
-            return;
+            ScriptConsole.println("[Error] Can't loot, Backpack is full.");
+            return random.nextLong(1000, 2000);
         }
 
         Pattern lootPattern = generateLootPattern(targetItemNames);
         List<Item> inventoryItems = LootInventory.getItems();
+        boolean shouldBreak = false;
 
         for (Item item : inventoryItems) {
+            if (shouldBreak) {
+                break;
+            }
             if (item.getName() != null && lootPattern.matcher(item.getName()).find()) {
-                ScriptConsole.println("[Loot] Successfully looted item: " + item.getName());
-                Execution.delay(RandomGenerator.nextInt(550, 650));
-                LootInventory.take(item.getName());
-                if (Notepaper) {
-                    useItemOnNotepaper();
+                ScriptConsole.println("[Loot] Found item to loot: " + item.getName());
+                while (LootInventory.contains(item.getName())) {
+                    ScriptConsole.println("[Loot] Attempting to loot item: " + item.getName());
+
+                    Item currentItem = LootInventory.getItems().stream()
+                            .filter(it -> it.getName().equals(item.getName()))
+                            .findFirst()
+                            .orElse(null);
+
+                    if (currentItem == null || currentItem.getSlot() != item.getSlot()) {
+                        ScriptConsole.println("[Loot] Item " + item.getName() + " no longer in the expected slot.");
+                        shouldBreak = true;
+                        break;
+                    }
+
+                    LootInventory.take(item.getName());
+                    if (Notepaper) {
+                        useItemOnNotepaper();
+                    }
+
+                    Execution.delay(random.nextInt(100, 200));
                 }
             }
         }
+        return random.nextLong(100, 200);
     }
-    //test
+
 
     public static void lootFromGround() {
         if (targetItemNames.isEmpty()) {

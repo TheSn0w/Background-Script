@@ -634,7 +634,11 @@ public class SkeletonScriptGraphicsContext extends ScriptGraphicsContext {
 
                 ImGui.EndTabBar();
                 ImGui.End();
+                ImGui.PopStyleVar(100);
+                ImGui.PopStyleColor(100);
             }
+            ImGui.PopStyleVar(100);
+            ImGui.PopStyleColor(100);
 
         }
         ImGui.PopStyleVar(100);
