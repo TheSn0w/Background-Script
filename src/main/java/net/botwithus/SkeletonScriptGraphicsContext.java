@@ -2,12 +2,16 @@ package net.botwithus;
 
 import net.botwithus.rs3.imgui.ImGui;
 import net.botwithus.rs3.imgui.ImGuiWindowFlag;
+import net.botwithus.rs3.imgui.NativeInteger;
 import net.botwithus.rs3.script.ScriptConsole;
 import net.botwithus.rs3.script.ScriptGraphicsContext;
 
 
 import java.time.Instant;
 import java.util.ArrayList;
+import java.util.List;
+
+import static net.botwithus.SkeletonScript.*;
 
 
 public class SkeletonScriptGraphicsContext extends ScriptGraphicsContext {
@@ -34,6 +38,33 @@ public class SkeletonScriptGraphicsContext extends ScriptGraphicsContext {
         this.startTime = Instant.now();
         this.scriptStartTime = System.currentTimeMillis();
     }
+
+    public static List<String> predefinedNotepaperNames = List.of(
+            "Huge bladed rune salvage",
+            "Huge spiky rune salvage",
+            "Huge plated rune salvage",
+            "Huge blunt rune salvage",
+            "Large blunt rune salvage",
+            "Large bladed rune salvage",
+            "Large plated rune salvage",
+            "Large spiky rune salvage",
+            "Huge bladed orikalkum salvage",
+            "Huge spiky orikalkum salvage",
+            "Huge plated orikalkum salvage",
+            "Huge blunt orikalkum salvage",
+            "Large blunt orikalkum salvage",
+            "Large bladed orikalkum salvage",
+            "Large plated orikalkum salvage",
+            "Large spiky orikalkum salvage",
+            "Ascension grips",
+            "Ascension Keystone Primus",
+            "Ascension Keystone Secundus",
+            "Ascension Keystone Tertius",
+            "Ascension Keystone Quartus",
+            "Ascension Keystone Quintus",
+            "Ascension Keystone Sextus"
+
+    );
 
 
     @Override
@@ -306,6 +337,12 @@ public class SkeletonScriptGraphicsContext extends ScriptGraphicsContext {
                     if (ImGui.IsItemHovered()) {
                         ImGui.SetTooltip("Will interact with Loot All button in loot interface for ALL loot, make sure no loot remains as it will keep interacting if loot found.");
                     }
+                    ImGui.SameLine();
+
+                    script.notedItems = ImGui.Checkbox("Noted Items", script.notedItems);
+                    if (ImGui.IsItemHovered()) {
+                        ImGui.SetTooltip("Will loot all noted items.");
+                    }
 
                     ImGui.SeparatorText("Items to Pickup");
 
@@ -331,7 +368,7 @@ public class SkeletonScriptGraphicsContext extends ScriptGraphicsContext {
                     if (!script.getTargetItemNames().isEmpty()) {
                         if (ImGui.BeginChild("Items List", 0, 100, true, 0)) {
                             int itemsPerLine = 6;
-                            int itemCount = 0; // Counter for items displayed so far
+                            int itemCount = 0;
 
                             for (String itemName : new ArrayList<>(script.getTargetItemNames())) {
                                 if (itemCount % itemsPerLine != 0) {
@@ -341,8 +378,6 @@ public class SkeletonScriptGraphicsContext extends ScriptGraphicsContext {
                                 if (ImGui.Button(itemName)) {
                                     script.println("Removing \"" + itemName + "\" from target items.");
                                     script.removeItemName(itemName);
-                                    // Depending on your logic, you may want to break here,
-                                    // but be cautious of concurrent modification issues.
                                 }
 
                                 if (ImGui.IsItemHovered()) {
@@ -364,17 +399,15 @@ public class SkeletonScriptGraphicsContext extends ScriptGraphicsContext {
                     this.targetName = ImGui.InputText("Target name", this.targetName);
 
 
-// Button to add the target name to the list
                     if (ImGui.Button("Add Target") && !this.targetName.isEmpty()) {
                         script.addTargetName(this.targetName);
-                        this.targetName = ""; // Clear the field after adding
+                        this.targetName = "";
                     }
 
                     if (ImGui.IsItemHovered()) {
                         ImGui.SetTooltip("Enter the name of the target to attack. Case-insensitive, partial names allowed.");
                     }
 
-// Display the list of targets with options to remove them
                     if (!script.getTargetNames().isEmpty()) {
                         if (ImGui.BeginChild("Targets List", 0, 100, true, 0)) {
                             boolean firstItem = true;
@@ -395,46 +428,71 @@ public class SkeletonScriptGraphicsContext extends ScriptGraphicsContext {
                         }
                         ImGui.EndChild();
                     }
-                    // ImGui Separator for visual distinction
                     ImGui.Separator();
-                    ImGui.SeparatorText("Use Items on Magic Notepaper");
-                    ImGui.SetItemWidth(250f);
-                    script.Notepaper = ImGui.Checkbox("Use Magic Notepaper", script.Notepaper);
-                    if (ImGui.IsItemHovered()) {
-                        ImGui.SetTooltip("Case SENSITIVE, e.g. `Magic Notepaper`");
-                    }
-                    this.selectedItemToUseOnNotepaper = ImGui.InputText("Item name to use on Notepaper", this.selectedItemToUseOnNotepaper);
+                    ImGui.SeparatorText("Notepaper Options");
 
-// Button to add the item to the list
-                    if (ImGui.Button("Add Item to Notepaper List") && !this.selectedItemToUseOnNotepaper.isEmpty()) {
-                        if (!script.getItemNamesToUseOnNotepaper().contains(this.selectedItemToUseOnNotepaper)) {
-                            script.addItemNameToUseOnNotepaper(this.selectedItemToUseOnNotepaper);
-                            this.selectedItemToUseOnNotepaper = ""; // Clear the input field after adding
+                    if (ImGui.Button("Add Notepaper") && !getNotepaperName().isEmpty()) {
+                        addNotepaperName(getNotepaperName());
+                        predefinedNotepaperNames.add(getNotepaperName());
+                        setNotepaperName("");
+                    }
+
+                    if (ImGui.IsItemHovered()) {
+                        ImGui.SetTooltip("Enter the name of the item to add to your list. Case-sensitive.");
+                    }
+
+                    ImGui.SameLine();
+                    ImGui.SetItemWidth(248.0F);
+
+                    setNotepaperName(ImGui.InputText("##Notepapername", getNotepaperName()));
+
+                    List<String> comboItemsList = new ArrayList<>();
+                    comboItemsList.add("Select an item...");
+                    for (String item : predefinedNotepaperNames) {
+                        if (item.toLowerCase().contains(getNotepaperName().toLowerCase())) {
+                            comboItemsList.add(item);
+                        }
+                    }
+                    String[] comboItems = comboItemsList.toArray(new String[0]);
+                    NativeInteger selectedItemIndex = new NativeInteger(0);
+                    ImGui.SetItemWidth(361.0F);
+
+                    if (ImGui.Combo("##NotepaperType", selectedItemIndex, comboItems)) {
+                        int selectedIndex = selectedItemIndex.get();
+                        if (selectedIndex > 0 && selectedIndex < comboItems.length) {
+                            String selectedName = comboItems[selectedIndex];
+                            addNotepaperName(selectedName);
+                            ScriptConsole.println("Predefined notepaper added: " + selectedName);
+                            selectedItemIndex.set(0);
                         }
                     }
 
-// Display the list of items to use on Magic Notepaper within a scrollable child window
-                    if (!script.getItemNamesToUseOnNotepaper().isEmpty()) {
-                        if (ImGui.BeginChild("Items to Use on Notepaper List", 0, 100, true, ImGuiWindowFlag.None.getValue())) {
-                            int itemCount = 0;
-                            for (String itemName : new ArrayList<>(script.getItemNamesToUseOnNotepaper())) {
-                                if (itemCount % 6 != 0) {
-                                    ImGui.SameLine();
-                                }
-                                itemCount++;
+                    if (!getSelectedNotepaperNames().isEmpty()) {
+                        if (ImGui.BeginTable("Notepaper List", 2, ImGuiWindowFlag.None.getValue())) {
+                            ImGui.TableNextRow();
 
-                                if (ImGui.Button(itemName)) {
-                                    script.removeItemNameToUseOnNotepaper(itemName);
-                                    break;
-                                }
+                            ImGui.TableSetupColumn("Notepaper Name", 0);
+                            ImGui.TableSetupColumn("Action", 1);
+                            ImGui.TableHeadersRow();
 
+                            for (String notepaperName : new ArrayList<>(getSelectedNotepaperNames())) {
+                                ImGui.TableNextRow();
+                                ImGui.Separator();
+                                ImGui.TableNextColumn();
+                                ImGui.Text(notepaperName);
+                                ImGui.Separator();
+                                ImGui.TableNextColumn();
+                                if (ImGui.Button("Remove##" + notepaperName)) {
+                                    removeNotepaperName(notepaperName);
+                                }
                                 if (ImGui.IsItemHovered()) {
-                                    ImGui.SetTooltip("Click to remove this item from the list");
+                                    ImGui.SetTooltip("Click to remove this notepaper");
                                 }
                             }
+                            ImGui.EndTable();
                         }
-                        ImGui.EndChild();
                     }
+
                     ImGui.EndTabItem();
                 }
                 if (ImGui.BeginTabItem("Logout Timer Setup", ImGuiWindowFlag.None.getValue())) {

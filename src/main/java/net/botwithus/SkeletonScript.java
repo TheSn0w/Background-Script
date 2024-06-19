@@ -48,7 +48,7 @@ import static net.botwithus.rs3.game.Client.getLocalPlayer;
 public class SkeletonScript extends LoopingScript {
     LocalPlayer Self = Client.getLocalPlayer();
     public int attackRadius = 10;
-    boolean Notepaper;
+    static boolean Notepaper;
     boolean HopWorlds;
     boolean useThievingDummy;
     private List<String> itemNamesToUseOnNotepaper = new ArrayList<>();
@@ -106,18 +106,18 @@ public class SkeletonScript extends LoopingScript {
     boolean buryBones;
     boolean useCharming;
     boolean enableGhost;
-    private Random random = new Random();
+    boolean notedItems;
+    private static Random random = new Random();
 
     static int[] membersWorlds = new int[]{
             1, 2, 4, 5, 6, 9, 10, 12, 14, 15,
             16, 21, 22, 23, 24, 25, 26, 27, 28, 31,
             32, 35, 36, 37, 39, 40, 42, 44, 45, 46,
-            47, 49, 50, 51, 53, 54, 56, 58, 59, 60,
+            49, 50, 51, 53, 54, 56, 58, 59, 60,
             62, 63, 64, 65, 66, 67, 68, 69, 70, 71,
-            72, 73, 74, 75, 76, 77, 78, 79, 82, 83,
-            85, 87, 88, 89, 91, 92, 97, 98, 99, 100,
-            102, 103, 104, 105, 106, 116, 117, 118, 119, 121,
-            123, 124, 134, 138, 139, 140, 252, 257, 258};
+            72, 73, 74, 76, 77, 78, 79, 82, 83,
+            85, 87, 88, 89, 91, 92, 97, 98, 99, 100, 103, 104, 105, 106, 116, 117, 119,
+            123, 124, 134, 138, 139, 140, 252};
 
 
     public SkeletonScript(String s, ScriptConfig scriptConfig, ScriptDefinition scriptDefinition) {
@@ -128,7 +128,6 @@ public class SkeletonScript extends LoopingScript {
         isBackgroundScript = true;
         this.loopDelay = RandomGenerator.nextInt(300, 600);
         this.runStartTime = System.currentTimeMillis();
-        subscribe(InventoryUpdateEvent.class, this::onInventoryUpdate);
     }
 
     public void startScript() {
@@ -161,6 +160,9 @@ public class SkeletonScript extends LoopingScript {
         LocalPlayer player = Client.getLocalPlayer();
         if (getLocalPlayer() != null && Client.getGameState() == Client.GameState.LOGGED_IN && !scriptRunning) {
             return;
+        }
+        if (notedItems) {
+            lootNotedItemsFromInventory();
         }
         if (enableGhost)
             CastGhost();
@@ -316,6 +318,70 @@ public class SkeletonScript extends LoopingScript {
             CharmingPotion();
     }
 
+    public static void lootNotedItemsFromInventory() {
+        boolean itemLooted = false;
+
+        if (LootInventory.isOpen()) {
+            List<Item> inventoryItems = LootInventory.getItems();
+
+            for (int i = inventoryItems.size() - 1; i >= 0; i--) {
+                if (itemLooted) break;
+
+                Item item = inventoryItems.get(i);
+                if (item.getName() == null) {
+                    continue;
+                }
+
+                var itemType = ConfigManager.getItemType(item.getId());
+                boolean isNote = itemType != null && itemType.isNote();
+
+                if (isNote) {
+                    if (Backpack.isFull()) {
+                        if (Backpack.contains(item.getName())) {
+                            LootInventory.take(item.getName());
+                            ScriptConsole.println("[Loot] Successfully looted noted item: " + item.getName());
+                            inventoryItems = LootInventory.getItems();
+                            itemLooted = true;
+                        } else {
+                            ScriptConsole.println("[Loot] Backpack is full and does not contain the noted item. Stopping looting.");
+                            return;
+                        }
+                    } else {
+                        LootInventory.take(item.getName());
+                        ScriptConsole.println("[Loot] Successfully looted noted item: " + item.getName());
+                        Execution.delay(random.nextLong(550, 750));
+                        inventoryItems = LootInventory.getItems();
+                        itemLooted = true;
+                    }
+                }
+            }
+        } else {
+            List<GroundItem> groundItems = GroundItemQuery.newQuery().results().stream().toList();
+
+            for (int i = groundItems.size() - 1; i >= 0; i--) {
+                if (itemLooted) break;
+
+                GroundItem groundItem = groundItems.get(i);
+                if (groundItem.getName() == null) {
+                    continue;
+                }
+
+                var itemType = ConfigManager.getItemType(groundItem.getId());
+                boolean isNote = itemType != null && itemType.isNote();
+
+                if (isNote) {
+                    groundItem.interact("Take");
+                    ScriptConsole.println("[Loot] Interacted with: " + groundItem.getName() + " on the ground.");
+                    Execution.delayUntil(random.nextLong(10000, 15000), LootInventory::isOpen);
+
+                    if (LootInventory.isOpen()) {
+                        itemLooted = true;
+                    }
+                }
+            }
+        }
+    }
+
     private void CastGhost() {
         if (VarManager.getVarValue(VarDomainType.PLAYER, 11018) == 0) {
             println("Cast Conjure army: " + ActionBar.useAbility("Conjure Undead Army"));
@@ -376,92 +442,104 @@ public class SkeletonScript extends LoopingScript {
 
 
 
-    private void onInventoryUpdate(InventoryUpdateEvent event) {
-        // Check the inventory for items that are currently marked as noted
-        InventoryItemQuery.newQuery(93) // Assuming 93 is the backpack inventory ID
-                .results()
-                .forEach(item -> {
-                    String itemName = item.getName();
-                    if (itemName != null && notedItemsTracker.containsKey(itemName.toLowerCase())) {
-                        // If an unnoted version is found, unmark it in the tracker
-                        if (!Objects.requireNonNull(ConfigManager.getItemType(item.getId())).isNote()) {
-                            notedItemsTracker.put(itemName.toLowerCase(), false);
-                        }
-                    }
-                });
+    public static String NotepaperName = "";
 
+    public static String getNotepaperName() {
+        return NotepaperName;
     }
 
-    public List<String> getItemNamesToUseOnNotepaper() {
-        return new ArrayList<>(itemNamesToUseOnNotepaper); // Return a copy to avoid external modification
+    public static void setNotepaperName(String notepaperName) {
+        NotepaperName = notepaperName;
     }
 
-    public void addItemNameToUseOnNotepaper(String itemName) {
-        if (!itemNamesToUseOnNotepaper.contains(itemName)) {
-            itemNamesToUseOnNotepaper.add(itemName);
-        }
+    public static void removeNotepaperName(String notepaperName) {
+        ScriptConsole.println("[Info] Removing " + notepaperName + " from selected notepaper names.");
+        selectedNotepaperNames.remove(notepaperName);
     }
 
-    public void removeItemNameToUseOnNotepaper(String itemName) {
-        itemNamesToUseOnNotepaper.remove(itemName); // Assumes you're storing item names in lowercase for case-insensitive matching
+    public static final List<String> selectedNotepaperNames = new ArrayList<>();
+
+    public static List<String> getSelectedNotepaperNames() {
+        return selectedNotepaperNames;
     }
 
-    private final Map<String, Boolean> notedItemsTracker = new HashMap<>();
+    public static void addNotepaperName(String notepaperName) {
+        ScriptConsole.println("[Info] Adding " + notepaperName + " to selected notepaper names.");
+        selectedNotepaperNames.add(notepaperName);
+    }
 
-    public void useItemOnNotepaper() {
-        for (String itemName : itemNamesToUseOnNotepaper) {
-            if (notedItemsTracker.getOrDefault(itemName.toLowerCase(), false)) {
-                continue; // Item is noted, so we skip this iteration
-            }
-            // Retrieve the item from the inventory using the item's name
-            Item targetItem = InventoryItemQuery.newQuery(93)
-                    .name(itemName)
-                    .results()
-                    .stream()
-                    .filter(item -> !Objects.requireNonNull(ConfigManager.getItemType(item.getId())).isNote()) // Ensure item is not noted
-                    .findFirst()
-                    .orElse(null);
+    public static void useItemOnNotepaper() {
+        List<Item> backpackItems = new ArrayList<>(Backpack.getItems());
 
-            if (targetItem == null) {
-                continue;
-            }
+        for (String itemName : getSelectedNotepaperNames()) {
+            List<Item> matchingItems = backpackItems.stream()
+                    .filter(item -> item.getName().toLowerCase().contains(itemName.toLowerCase()))
+                    .toList();
 
-            // Retrieve Magic Notepaper or Enchanted Notepaper from the inventory
-            Item notepaper = InventoryItemQuery.newQuery(93)
-                    .results()
-                    .stream()
-                    .filter(item -> item.getName().equalsIgnoreCase("Magic notepaper") || item.getName().equalsIgnoreCase("Enchanted notepaper"))
-                    .findFirst()
-                    .orElse(null);
-
-            if (notepaper == null) {
-                println("Neither Magic Notepaper nor Enchanted Notepaper found in inventory.");
-                return;
-            }
-
-            String notepaperName = notepaper.getName(); // Store the name of the notepaper
-
-            println("Found " + itemName + " and " + notepaperName + ". Preparing to use.");
-
-            boolean itemSelected = MiniMenu.interact(SelectableAction.SELECTABLE_COMPONENT.getType(), 0, targetItem.getSlot(), 96534533);
-            Execution.delay(RandomGenerator.nextInt(500, 750));
-
-            if (itemSelected) {
-                println("Using " + itemName + " on " + notepaperName + "...");
-                boolean notepaperSelected = MiniMenu.interact(SelectableAction.SELECT_COMPONENT_ITEM.getType(), 0, notepaper.getSlot(), 96534533);
-                Execution.delay(RandomGenerator.nextInt(500, 750));
-
-                if (notepaperSelected) {
-                    println(itemName + " successfully used on " + notepaperName + ".");
-                    // Mark the item as noted
-                    notedItemsTracker.put(itemName.toLowerCase(), true);
-                } else {
-                    println("Failed to use " + itemName + " on " + notepaperName + ".");
+            for (Item targetItem : matchingItems) {
+                var itemType = ConfigManager.getItemType(targetItem.getId());
+                boolean isNote = itemType != null && itemType.isNote();
+                if (isNote) {
+                    continue;
                 }
-            } else {
-                println("Failed to select " + itemName + ".");
+
+                Item notepaper = fetchNotepaperFromInventory();
+                if (notepaper == null) {
+                    ScriptConsole.println("[Error] Neither Magic Notepaper nor Enchanted Notepaper found in inventory.");
+                    return;
+                }
+
+                boolean itemSelected = MiniMenu.interact(SelectableAction.SELECTABLE_COMPONENT.getType(), 0, targetItem.getSlot(), 96534533);
+                ScriptConsole.println("[Info] Item selected: " + itemSelected);
+                Execution.delay(RandomGenerator.nextInt(200, 300));
+
+                if (itemSelected) {
+                    boolean notepaperSelected = MiniMenu.interact(SelectableAction.SELECT_COMPONENT_ITEM.getType(), 0, notepaper.getSlot(), 96534533);
+                    ScriptConsole.println("[Info] Notepaper selected: " + notepaperSelected);
+
+                    if (notepaperSelected) {
+                        String notepaperName = notepaper.getName();
+                        ScriptConsole.println("[Success] " + itemName + " successfully used on " + notepaperName + ".");
+                        break;
+                    } else {
+                        String notepaperName = notepaper.getName();
+                        ScriptConsole.println("[Error] Failed to use " + itemName + " on " + notepaperName + ".");
+                        ScriptConsole.println("[Debug] Notepaper details - Name: " + notepaper.getName() + ", ID: " + notepaper.getId());
+                    }
+                } else {
+                    ScriptConsole.println("[Error] Failed to select " + itemName + ".");
+                    ScriptConsole.println("[Debug] Item details - Name: " + targetItem.getName() + ", ID: " + targetItem.getId());
+                }
             }
         }
+    }
+
+    private static Item fetchNotepaperFromInventory() {
+        Item magicNotepaper = fetchSpecificNotepaper("Magic notepaper");
+
+        if (magicNotepaper == null) {
+            ScriptConsole.println("[Debug] Magic Notepaper not found in inventory. Trying to fetch Enchanted notepaper...");
+            Item enchantedNotepaper = fetchSpecificNotepaper("Enchanted notepaper");
+
+            if (enchantedNotepaper == null) {
+                ScriptConsole.println("[Debug] Enchanted Notepaper not found in inventory.");
+                return null;
+            } else {
+                return enchantedNotepaper;
+            }
+        } else {
+            return magicNotepaper;
+        }
+    }
+
+    private static Item fetchSpecificNotepaper(String notepaperName) {
+        Item notepaper = Backpack.getItem(notepaperName);
+        if (notepaper != null) {
+            ScriptConsole.println("[Info] Notepaper found: " + notepaper.getName());
+            return notepaper;
+        }
+        ScriptConsole.println("[Debug] " + notepaperName + " not found in inventory.");
+        return null;
     }
     private final List<String> targetNames = new ArrayList<>(); // Consider using a thread-safe collection if accessed concurrently
 
@@ -548,7 +626,7 @@ public class SkeletonScript extends LoopingScript {
 
 
 
-    private List<String> targetItemNames = new ArrayList<>();
+    private static List<String> targetItemNames = new ArrayList<>();
 
     public void addItemName(String itemName) {
         if (!targetItemNames.contains(itemName)) {
@@ -648,7 +726,7 @@ public class SkeletonScript extends LoopingScript {
     }
 
     // Generates a regex pattern from a list of target item names
-    private Pattern generateLootPattern(List<String> names) {
+    private static Pattern generateLootPattern(List<String> names) {
         return Pattern.compile(
                 names.stream()
                         .map(Pattern::quote) // Safely escape regex special characters
@@ -672,62 +750,51 @@ public class SkeletonScript extends LoopingScript {
             lootFromGround();
         }
     }
-    private void lootFromInventory() {
-        if (!canLoot()) { // Check if looting is possible
-            println("[LootFromInventory] No target items specified for looting.");
+    public static void lootFromInventory() {
+        if (Backpack.isFull()) {
+            ScriptConsole.println("[Error] Cant loot or Backpack is full.");
             return;
         }
 
-        // Create regex pattern from target item names
         Pattern lootPattern = generateLootPattern(targetItemNames);
-
-        // Get all items from the loot inventory
         List<Item> inventoryItems = LootInventory.getItems();
 
         for (Item item : inventoryItems) {
-            if (item.getName() == null) { // Ignore items without names
-                continue;
-            }
-
-            // Check if the item name matches the regex pattern
-            Matcher matcher = lootPattern.matcher(item.getName());
-            if (matcher.matches()) { // If there's a match, loot the item
+            if (item.getName() != null && lootPattern.matcher(item.getName()).find()) {
                 LootInventory.take(item.getName());
-                println("[LootFromInventory] Successfully looted item: " + item.getName());
+                ScriptConsole.println("[Loot] Successfully looted item: " + item.getName());
+                if (Notepaper) {
+                    useItemOnNotepaper();
+                }
+                break;
             }
         }
     }
 
-    private void lootFromGround() {
-        if (targetItemNames.isEmpty()) { // If no target items, exit early
-            println("[LootFromGround] No target items specified for looting.");
+    public static void lootFromGround() {
+        if (targetItemNames.isEmpty()) {
+            ScriptConsole.println("[Error] No target items specified for looting.");
             return;
         }
 
-        if (LootInventory.isOpen()) { // If loot interface is open, exit early
-            println("[LootFromGround] Loot interface is open, skipping ground looting.");
+        if (LootInventory.isOpen()) {
+            ScriptConsole.println("[Loot] Loot interface is open, skipping ground looting.");
             return;
         }
 
-        // Create regex pattern from target item names
         Pattern lootPattern = generateLootPattern(targetItemNames);
+        List<GroundItem> groundItems = GroundItemQuery.newQuery().results().stream().toList();
 
-        // Find ground items matching the regex pattern
-        Optional<GroundItem> targetGroundItem = GroundItemQuery.newQuery()
-                .results() // Retrieve all ground items
-                .stream()
-                .filter(groundItem -> groundItem.getName() != null) // Ensure item has a name
-                .filter(groundItem -> lootPattern.matcher(groundItem.getName()).matches()) // Match with regex pattern
-                .findFirst(); // Get the first matching ground item
+        boolean itemInteracted = groundItems.stream()
+                .filter(groundItem -> groundItem.getName() != null && lootPattern.matcher(groundItem.getName()).find())
+                .anyMatch(groundItem -> {
+                    groundItem.interact("Take");
+                    ScriptConsole.println("[Loot] Interacted with: " + groundItem.getName() + " on the ground.");
+                    return Execution.delayUntil(random.nextLong(10000, 15000), LootInventory::isOpen);
+                });
 
-        if (targetGroundItem.isPresent()) {
-            GroundItem groundItem = targetGroundItem.get();
-            if (groundItem.interact("Take")) { // Attempt to take the ground item
-                println("[lootFromGround] Interacted with: " + groundItem.getName() + " on the ground.");
-                Execution.delay(5000); // Delay to simulate the interaction
-            }
-        } else {
-            println("[lootFromGround] No matching ground items found.");
+        if (!itemInteracted) {
+            ScriptConsole.println("[Loot] No matching items found or LootInventory did not open.");
         }
     }
 
@@ -2062,27 +2129,51 @@ public class SkeletonScript extends LoopingScript {
 
 
     public static void HopWorlds(int world) {
-        ScriptConsole.println("Interacting with the Settings button");
-        MiniMenu.interact(ComponentAction.COMPONENT.getType(), 1, 7, 93782016);
-        boolean WorldPage = Execution.delayUntil(5000, () -> Interfaces.isOpen(1433));
-        Execution.delay(RandomGenerator.nextInt(600, 1000));
+        LocalPlayer player = Client.getLocalPlayer();
+        if (Interfaces.isOpen(1431)) {
+            ScriptConsole.println("[Runecrafting] Interacting with Settings Icon.");
+            component(1, 7, 93782016);
+            boolean hopperOpen = Execution.delayUntil(random.nextLong(5012, 9998), () -> Interfaces.isOpen(1433));
+            ScriptConsole.println("Settings Menu Open: " + hopperOpen);
+            Execution.delay(random.nextLong(642, 786));
 
-        if (WorldPage) {
-            Component HopWorldsMenu = ComponentQuery.newQuery(1433).componentIndex(65).results().first();
-            if (HopWorldsMenu != null) {
-                MiniMenu.interact(ComponentAction.COMPONENT.getType(), 1, -1, 93913153);
-                ScriptConsole.println("Hop Worlds Button Clicked.");
-                boolean worldSelectOpen = Execution.delayUntil(5000, () -> Interfaces.isOpen(1587));
-                Execution.delay(RandomGenerator.nextInt(600, 1000));
+            if (hopperOpen) {
+                Component HopWorldsMenu = ComponentQuery.newQuery(1433).componentIndex(65).results().first();
+                if (HopWorldsMenu != null) {
+                    Execution.delay(random.nextLong(642, 786));
+                    component(1, -1, 93913153);
+                    ScriptConsole.println("[Runecrafting] Hop Worlds Button Clicked.");
+                    boolean worldSelectOpen = Execution.delayUntil(random.nextLong(5014, 9758), () -> Interfaces.isOpen(1587));
 
-                if (worldSelectOpen) {
-                    MiniMenu.interact(ComponentAction.COMPONENT.getType(), 2, world, 104005640);
-                    Execution.delay(RandomGenerator.nextInt(10000, 20000));
+                    if (worldSelectOpen) {
+                        ScriptConsole.println("[Runecrafting] World Select Interface Open.");
+                        Execution.delay(random.nextLong(642, 786));
+                        component(2, world, 104005640);
+                        ScriptConsole.println("[Runecrafting] Selected World: " + world);
+
+                        if (Client.getGameState() == Client.GameState.LOGGED_IN && player != null) {
+                            Execution.delay(random.nextLong(7548, 9879));
+                            ScriptConsole.println("[Runecrafting] Resuming script.");
+                        } else {
+                            ScriptConsole.println("[Runecrafting] Failed to resume script. GameState is not LOGGED_IN or player is null.");
+                        }
+                    } else {
+                        ScriptConsole.println("[Runecrafting] Failed to open World Select Interface.");
+                    }
+                } else {
+                    ScriptConsole.println("[Runecrafting] Failed to find Hop Worlds Menu.");
                 }
             } else {
-                ScriptConsole.println("Hop Worlds Button not found.");
+                ScriptConsole.println("[Runecrafting] Failed to open hopper. Retrying...");
+                HopWorlds(world);
             }
+        } else {
+            ScriptConsole.println("[Runecrafting] Interface 1431 is not open.");
         }
+    }
+    public static boolean component(int option1, int option2, int option3) {
+        MiniMenu.interact(ComponentAction.COMPONENT.getType(), option1, option2, option3);
+        return false;
     }
 
     public void saveConfiguration() {
