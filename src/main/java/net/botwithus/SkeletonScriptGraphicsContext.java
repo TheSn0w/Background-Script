@@ -430,6 +430,7 @@ public class SkeletonScriptGraphicsContext extends ScriptGraphicsContext {
                     }
                     ImGui.Separator();
                     ImGui.SeparatorText("Notepaper Options");
+                    Notepaper = ImGui.Checkbox("Use Notepaper", Notepaper);
 
                     if (ImGui.Button("Add Notepaper") && !getNotepaperName().isEmpty()) {
                         addNotepaperName(getNotepaperName());
